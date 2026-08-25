@@ -25,6 +25,7 @@ export default function App() {
           Dashboard
         </Link>
         <Link to="/app/catalog">Page & Section Library</Link>
+        <Link to="/app/india">India Essentials</Link>
         <Link to="/app/billing">Plans & Billing</Link>
       </NavMenu>
       <Outlet />

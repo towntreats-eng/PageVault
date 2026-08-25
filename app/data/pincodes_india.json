@@ -1,0 +1,22 @@
+[
+  { "pincode": "110001", "courier": "BlueDart Express Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "110020", "courier": "Delhivery Express", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "400001", "courier": "BlueDart Express Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "400050", "courier": "DTDC Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "560001", "courier": "Delhivery Priority", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "560034", "courier": "BlueDart Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "600001", "courier": "Ecom Express", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "700001", "courier": "Delhivery Surface", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "500001", "courier": "BlueDart Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "411001", "courier": "DTDC Express", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "380001", "courier": "Delhivery Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "302001", "courier": "Ecom Express", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "226001", "courier": "Delhivery Surface", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "160017", "courier": "BlueDart Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "800001", "courier": "India Post Speed Post", "cod_available": false, "prepaid_available": true, "eta_days": 4 },
+  { "pincode": "395003", "courier": "DTDC Air", "cod_available": true, "prepaid_available": true, "eta_days": 2 },
+  { "pincode": "682001", "courier": "Delhivery Express", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "781001", "courier": "BlueDart Air", "cod_available": true, "prepaid_available": true, "eta_days": 4 },
+  { "pincode": "452001", "courier": "Ecom Express", "cod_available": true, "prepaid_available": true, "eta_days": 3 },
+  { "pincode": "141001", "courier": "Delhivery Surface", "cod_available": true, "prepaid_available": true, "eta_days": 3 }
+]

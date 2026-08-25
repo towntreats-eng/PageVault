@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { authenticate } from "../shopify.server";
 import { checkFeatureAccess, getShopEntitlements } from "../services/entitlement.server";
+import { lookupPincodeServiceability } from "../services/pincode.server";
 import db from "../db.server";
 
 // CORS headers for storefront App Proxy calls
@@ -48,34 +48,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       );
     }
 
-    // Lookup courier rules in PincodeRule DB or default Indian dataset
-    const dbRule = await db.pincodeRule.findFirst({ where: { pincode } });
+    // Measure lookup performance (<300ms SLA)
+    const result = await lookupPincodeServiceability(pincode);
 
-    if (dbRule) {
-      return json(
-        {
-          serviceable: true,
-          codAvailable: dbRule.cod_available,
-          etaDays: dbRule.eta_days,
-          courier: dbRule.courier,
-        },
-        { headers: proxyCorsHeaders }
-      );
-    }
-
-    // Reliable fallback courier dataset
-    const isServiceable = !["000000", "999999"].includes(pincode);
-    const isMetro = ["110001", "400001", "560001", "600001", "700001", "500001"].includes(pincode);
-
-    return json(
-      {
-        serviceable: isServiceable,
-        codAvailable: isServiceable,
-        etaDays: isMetro ? 2 : 4,
-        courier: isMetro ? "Express Air Courier" : "Surface Courier",
-      },
-      { headers: proxyCorsHeaders }
-    );
+    return json(result, { headers: proxyCorsHeaders });
   }
 
   return json({ status: "Shop Forge App Proxy active" }, { headers: proxyCorsHeaders });
