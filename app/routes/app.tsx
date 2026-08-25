@@ -26,6 +26,8 @@ export default function App() {
         </Link>
         <Link to="/app/catalog">Page & Section Library</Link>
         <Link to="/app/india">India Essentials</Link>
+        <Link to="/app/reviews">Photo Reviews</Link>
+        <Link to="/app/growth">Growth Features</Link>
         <Link to="/app/billing">Plans & Billing</Link>
       </NavMenu>
       <Outlet />
