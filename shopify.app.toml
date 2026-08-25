@@ -1,7 +1,7 @@
 # Configuration for Shop Forge Shopify App
 
 name = "shop-forge"
-client_id = ""
+client_id = "8e09eac89e33d5062083fa28d6e154f3"
 application_url = "https://pagevault-production.up.railway.app"
 embedded = true
 
