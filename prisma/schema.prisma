@@ -5,9 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
@@ -31,4 +28,118 @@ model Session {
   emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id                      String   @id @default(uuid())
+  domain                  String   @unique
+  plan                    String   @default("free")
+  order_count_this_period Int      @default(0)
+  period_start            DateTime @default(now())
+  currency                String   @default("USD")
+  installed_at            DateTime @default(now())
+  updated_at              DateTime @updatedAt
+}
+
+model Subscription {
+  id                      String    @id @default(uuid())
+  shop_domain             String
+  tier                    String    // free | starter | growth | scale | pro
+  shopify_subscription_id String?
+  status                  String    // active | cancelled | lapsed
+  current_period_end      DateTime?
+  cap_orders              Int       @default(100)
+  overage_state           String    @default("ok") // ok | approaching | exceeded
+  created_at              DateTime  @default(now())
+  updated_at              DateTime  @updatedAt
+}
+
+model CatalogItem {
+  id             String   @id @default(uuid())
+  type           String   // page | section
+  name           String
+  slug           String   @unique
+  niche_tags     String   // comma-separated tags
+  style_tags     String   // comma-separated tags
+  funnel_stage   String   // top | middle | bottom
+  india_features String   // cod, pincode, whatsapp, upi, gst, bilingual
+  block_handle   String
+  theme_compat   String   // os2 | horizon
+  min_tier       String   // free | starter | growth | scale | pro
+  demo_url       String?
+  version        String   @default("1.0.0")
+  changelog      String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  tier        String   // free | starter | growth | scale | pro
+  feature_key String   // e.g. pincode_checker, photo_reviews, wishlist, stock_alerts, upsell_blocks
+  enabled     Boolean  @default(true)
+
+  @@unique([tier, feature_key])
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  shop_domain String
+  product_id  String
+  customer_id String?
+  rating      Int
+  body        String
+  photos      String   // JSON array string of photo URLs
+  author      String
+  verified    Boolean  @default(false)
+  status      String   @default("pending") // pending | published | rejected
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
+
+model WishlistItem {
+  id          String   @id @default(uuid())
+  shop_domain String
+  customer_id String
+  product_id  String
+  created_at  DateTime @default(now())
+}
+
+model StockAlert {
+  id          String    @id @default(uuid())
+  shop_domain String
+  customer_id String?
+  variant_id  String
+  email       String
+  notified_at DateTime?
+  created_at  DateTime  @default(now())
+}
+
+model PincodeRule {
+  id                String   @id @default(uuid())
+  courier           String
+  pincode           String
+  cod_available     Boolean  @default(true)
+  prepaid_available Boolean  @default(true)
+  eta_days          Int      @default(3)
+  created_at        DateTime @default(now())
+
+  @@unique([courier, pincode])
+}
+
+model Install {
+  id           String   @id @default(uuid())
+  shop_domain  String
+  item_id      String
+  theme_id     String
+  installed_at DateTime @default(now())
+  status       String   @default("active")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  shop_domain String
+  type        String   // view | demo_open | install | upgrade | downgrade | churn | feature_blocked
+  payload     String?  // JSON context
+  created_at  DateTime @default(now())
 }
