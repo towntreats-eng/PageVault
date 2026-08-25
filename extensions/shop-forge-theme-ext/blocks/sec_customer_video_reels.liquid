@@ -1,0 +1,138 @@
+{% comment %}
+  Shop Forge — UGC Video Reels & Social Proof Section
+  Displays vertical video testimonials and customer unboxing reels to maximize trust and conversion.
+{% endcomment %}
+
+<div class="sf-video-reels-section sf-section-padding" style="background-color: {{ block.settings.bg_color }};">
+  <div class="sf-container">
+    <div class="sf-section-header sf-text-center">
+      <span class="sf-badge sf-badge-primary">REAL CUSTOMER STORIES</span>
+      <h2 class="sf-title-lg" style="color: {{ block.settings.text_color }};">{{ block.settings.heading }}</h2>
+      <p class="sf-subtitle" style="color: {{ block.settings.text_muted }};">{{ block.settings.subheading }}</p>
+    </div>
+
+    <div class="sf-reels-grid">
+      <!-- Reel 1 -->
+      <div class="sf-reel-card">
+        <div class="sf-reel-thumbnail" style="background-image: url('{{ block.settings.reel1_thumb }}');">
+          <span class="sf-play-button">▶</span>
+          <span class="sf-verified-pill">✓ Verified Buyer</span>
+        </div>
+        <div class="sf-reel-info">
+          <h4>{{ block.settings.reel1_name }}</h4>
+          <p>"{{ block.settings.reel1_quote }}"</p>
+        </div>
+      </div>
+
+      <!-- Reel 2 -->
+      <div class="sf-reel-card">
+        <div class="sf-reel-thumbnail" style="background-image: url('{{ block.settings.reel2_thumb }}');">
+          <span class="sf-play-button">▶</span>
+          <span class="sf-verified-pill">✓ Verified Buyer</span>
+        </div>
+        <div class="sf-reel-info">
+          <h4>{{ block.settings.reel2_name }}</h4>
+          <p>"{{ block.settings.reel2_quote }}"</p>
+        </div>
+      </div>
+
+      <!-- Reel 3 -->
+      <div class="sf-reel-card">
+        <div class="sf-reel-thumbnail" style="background-image: url('{{ block.settings.reel3_thumb }}');">
+          <span class="sf-play-button">▶</span>
+          <span class="sf-verified-pill">✓ Verified Buyer</span>
+        </div>
+        <div class="sf-reel-info">
+          <h4>{{ block.settings.reel3_name }}</h4>
+          <p>"{{ block.settings.reel3_quote }}"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-reels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+  .sf-reel-card {
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.2s ease;
+  }
+  .sf-reel-card:hover {
+    transform: translateY(-4px);
+  }
+  .sf-reel-thumbnail {
+    height: 380px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sf-play-button {
+    width: 56px;
+    height: 56px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #111827;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .sf-verified-pill {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(16, 185, 129, 0.95);
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .sf-reel-info {
+    padding: 20px;
+  }
+  .sf-reel-info h4 {
+    margin: 0 0 6px 0;
+    font-size: 1rem;
+    color: #111827;
+  }
+  .sf-reel-info p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #4b5563;
+    font-style: italic;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "UGC Video Reels",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Loved By 25,000+ Happy Customers" },
+    { "type": "text", "id": "subheading", "label": "Subheading", "default": "Watch unboxing videos & real transformation results." },
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#ffffff" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#111827" },
+    { "type": "color", "id": "text_muted", "label": "Subheading Color", "default": "#6b7280" },
+    { "type": "text", "id": "reel1_name", "label": "Reel 1 Customer Name", "default": "Ananya Sharma, Delhi" },
+    { "type": "text", "id": "reel1_quote", "label": "Reel 1 Quote", "default": "I was blown away by the quality. Delivered in just 2 days!" },
+    { "type": "text", "id": "reel2_name", "label": "Reel 2 Customer Name", "default": "Rahul Verma, Mumbai" },
+    { "type": "text", "id": "reel2_quote", "label": "Reel 2 Quote", "default": "Best purchase of the year. Worth every single rupee!" },
+    { "type": "text", "id": "reel3_name", "label": "Reel 3 Customer Name", "default": "Priya Nair, Bengaluru" },
+    { "type": "text", "id": "reel3_quote", "label": "Reel 3 Quote", "default": "Super easy COD payment process and fantastic customer service." }
+  ]
+}
+{% endschema %}

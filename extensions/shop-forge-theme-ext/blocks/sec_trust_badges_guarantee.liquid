@@ -1,0 +1,90 @@
+{% comment %}
+  Shop Forge — CRO Risk-Free Guarantee & Trust Badges Section
+  Increases checkout conversion rates by displaying security, return policy, and payment guarantees.
+{% endcomment %}
+
+<div class="sf-trust-bar-section" style="background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }}; padding: 24px 0; border-top: 1px solid rgba(0,0,0,0.06); border-bottom: 1px solid rgba(0,0,0,0.06);">
+  <div class="sf-container">
+    <div class="sf-trust-grid">
+      <div class="sf-trust-item">
+        <span class="sf-trust-icon">🚚</span>
+        <div>
+          <strong>{{ block.settings.b1_title }}</strong>
+          <span>{{ block.settings.b1_sub }}</span>
+        </div>
+      </div>
+
+      <div class="sf-trust-item">
+        <span class="sf-trust-icon">💵</span>
+        <div>
+          <strong>{{ block.settings.b2_title }}</strong>
+          <span>{{ block.settings.b2_sub }}</span>
+        </div>
+      </div>
+
+      <div class="sf-trust-item">
+        <span class="sf-trust-icon">🔄</span>
+        <div>
+          <strong>{{ block.settings.b3_title }}</strong>
+          <span>{{ block.settings.b3_sub }}</span>
+        </div>
+      </div>
+
+      <div class="sf-trust-item">
+        <span class="sf-trust-icon">🔒</span>
+        <div>
+          <strong>{{ block.settings.b4_title }}</strong>
+          <span>{{ block.settings.b4_sub }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    align-items: center;
+  }
+  .sf-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .sf-trust-icon {
+    font-size: 1.8rem;
+    background: rgba(0,0,0,0.04);
+    padding: 10px;
+    border-radius: 50%;
+  }
+  .sf-trust-item strong {
+    display: block;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+  .sf-trust-item span {
+    font-size: 0.82rem;
+    opacity: 0.8;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Trust & Guarantee Bar",
+  "target": "section",
+  "settings": [
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#ffffff" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#1f2937" },
+    { "type": "text", "id": "b1_title", "label": "Badge 1 Title", "default": "Free Express Delivery" },
+    { "type": "text", "id": "b1_sub", "label": "Badge 1 Subtitle", "default": "On all prepaid orders across India" },
+    { "type": "text", "id": "b2_title", "label": "Badge 2 Title", "default": "Cash On Delivery Available" },
+    { "type": "text", "id": "b2_sub", "label": "Badge 2 Subtitle", "default": "Pay at your doorstep with confidence" },
+    { "type": "text", "id": "b3_title", "label": "Badge 3 Title", "default": "7-Day Easy Returns" },
+    { "type": "text", "id": "b3_sub", "label": "Badge 3 Subtitle", "default": "No questions asked exchange policy" },
+    { "type": "text", "id": "b4_title", "label": "Badge 4 Title", "default": "100% Secure Checkout" },
+    { "type": "text", "id": "b4_sub", "label": "Badge 4 Subtitle", "default": "Encrypted UPI, Cards & Netbanking" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,61 @@
+{% comment %}
+  Shop Forge — CRO Sticky WhatsApp Support Widget
+  Floating 1-click WhatsApp chat button to boost Indian D2C customer trust & order conversion.
+{% endcomment %}
+
+<div class="sf-whatsapp-floating-widget">
+  <a href="https://wa.me/{{ block.settings.whatsapp_number }}?text={{ block.settings.whatsapp_msg | url_encode }}" target="_blank" class="sf-wa-btn" rel="noopener noreferrer">
+    <span class="sf-wa-icon">💬</span>
+    <span class="sf-wa-text">{{ block.settings.button_text }}</span>
+    <span class="sf-wa-online-dot"></span>
+  </a>
+</div>
+
+<style>
+  .sf-whatsapp-floating-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+  }
+  .sf-wa-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #25d366;
+    color: #ffffff !important;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none !important;
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .sf-wa-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
+  }
+  .sf-wa-icon {
+    font-size: 1.2rem;
+  }
+  .sf-wa-online-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Floating WhatsApp Chat",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "whatsapp_number", "label": "WhatsApp Business Phone Number", "default": "919876543210" },
+    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Chat on WhatsApp" },
+    { "type": "text", "id": "whatsapp_msg", "label": "Pre-filled Message", "default": "Hi! I have a query regarding a product on your store." }
+  ]
+}
+{% endschema %}

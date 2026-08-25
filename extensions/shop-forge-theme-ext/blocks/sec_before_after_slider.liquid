@@ -1,0 +1,119 @@
+{% comment %}
+  Shop Forge — CRO Before / After Interactive Visual Transformation Slider
+  Ideal for Beauty, Skincare, Fitness, Apparel, & Home Care product transformation proof.
+{% endcomment %}
+
+<div class="sf-before-after-section sf-section-padding" style="background-color: {{ block.settings.bg_color }};">
+  <div class="sf-container">
+    <div class="sf-section-header sf-text-center">
+      <span class="sf-badge sf-badge-primary">PROVEN RESULTS</span>
+      <h2 class="sf-title-lg" style="color: {{ block.settings.text_color }};">{{ block.settings.heading }}</h2>
+      <p class="sf-subtitle" style="color: {{ block.settings.text_muted }};">{{ block.settings.subheading }}</p>
+    </div>
+
+    <div class="sf-before-after-container">
+      <div class="sf-ba-card">
+        <div class="sf-ba-badge sf-ba-before">BEFORE</div>
+        <div class="sf-ba-badge sf-ba-after">AFTER 14 DAYS</div>
+        <div class="sf-ba-placeholder">
+          <span>✨ Visible Results Guaranteed</span>
+        </div>
+      </div>
+
+      <div class="sf-ba-stats">
+        <div class="sf-stat-box">
+          <h3>94%</h3>
+          <p>{{ block.settings.stat1_label }}</p>
+        </div>
+        <div class="sf-stat-box">
+          <h3>98%</h3>
+          <p>{{ block.settings.stat2_label }}</p>
+        </div>
+        <div class="sf-stat-box">
+          <h3>4.9★</h3>
+          <p>{{ block.settings.stat3_label }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-before-after-container {
+    max-width: 800px;
+    margin: 32px auto 0 auto;
+  }
+  .sf-ba-card {
+    position: relative;
+    height: 360px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #1f2937, #111827);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+  .sf-ba-badge {
+    position: absolute;
+    top: 20px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .sf-ba-before {
+    left: 20px;
+    background: rgba(239, 68, 68, 0.9);
+  }
+  .sf-ba-after {
+    right: 20px;
+    background: rgba(16, 185, 129, 0.9);
+  }
+  .sf-ba-placeholder span {
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  .sf-ba-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+    text-align: center;
+  }
+  .sf-stat-box {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  .sf-stat-box h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.6rem;
+    color: #2563eb;
+  }
+  .sf-stat-box p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #4b5563;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Before/After Results",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Real Results You Can See & Feel" },
+    { "type": "text", "id": "subheading", "label": "Subheading", "default": "Based on a 14-day consumer perception study." },
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#f9fafb" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#111827" },
+    { "type": "color", "id": "text_muted", "label": "Subheading Color", "default": "#6b7280" },
+    { "type": "text", "id": "stat1_label", "label": "Stat 1 Label", "default": "Reported Visible Improvement" },
+    { "type": "text", "id": "stat2_label", "label": "Stat 2 Label", "default": "Would Recommend To Friends" },
+    { "type": "text", "id": "stat3_label", "label": "Stat 3 Label", "default": "Overall Customer Satisfaction" }
+  ]
+}
+{% endschema %}
