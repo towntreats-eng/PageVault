@@ -1,0 +1,20 @@
+{
+  "appName": "Shop Forge — Conversion Suite",
+  "tagline": "All-in-One D2C Conversion Suite & Ready-Made Page Library",
+  "valueProposition": "Replace 5 separate apps with one high-converting store OS. Includes courier pincode & COD checker, photo reviews, customer wishlist, back-in-stock alerts, product bundles, and sticky urgency ATC inside theme-matched page designs.",
+  "features": [
+    "Courier Pincode & COD Delivery Checker with SLA calculation (<50ms speed)",
+    "Customer Photo Reviews & Moderation Queue with review-request emails",
+    "Customer Wishlist & Back-In-Stock Restock Alerts",
+    "Frequently Bought Together Bundles & Upsell Cards",
+    "Sticky Add-To-Cart Bar with Real Inventory Urgency (no fake urgency)",
+    "50 Ready-Made Page & Section Designs (100% Token-Driven)"
+  ],
+  "howItWorks": "1. Install Shop Forge on your store in 1 click.\n2. Browse 50 ready-made page and section conversion designs.\n3. Add blocks directly into your active theme via Shopify Theme Editor.\n4. Enable Store OS features (pincode checker, photo reviews, wishlist, bundles) with zero coding.",
+  "pricingExplanation": "Unambiguous Subscription Tiers & Order Volume Caps:\n- Free: $0/mo (₹0/mo) — 5 static designs, no watermark.\n- Starter: $9/mo (₹799/mo) — up to 100 orders/mo. Includes India Essentials Pack.\n- Growth: $29/mo (₹2,499/mo) — up to 500 orders/mo. Includes Photo Reviews, Wishlist, Stock Alerts, Bundles & Sticky ATC.\n- Scale: $59/mo (₹4,999/mo) — up to 2,000 orders/mo. Includes A/B Testing & Analytics.\n- Pro: $99/mo (₹8,999/mo) — unlimited orders/mo. Includes dedicated support.",
+  "compedReviewerAccount": {
+    "compedTier": "pro",
+    "unlimitedOrders": true,
+    "instructions": "Log in to the app to automatically receive full comped Pro tier permissions."
+  }
+}

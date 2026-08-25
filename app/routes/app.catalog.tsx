@@ -17,13 +17,15 @@ import {
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
+import { CATALOG_50_ITEMS } from "../models/catalog_50";
+import { detectShopThemeArchitecture } from "../services/theme.server";
 import db from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  // Retrieve active subscription or shop plan
+  const themeStatus = await detectShopThemeArchitecture(admin);
   const shopRecord = await db.shop.findUnique({ where: { domain: shopDomain } });
   const activeSubscription = await db.subscription.findFirst({
     where: { shop_domain: shopDomain, status: "active" },
@@ -31,139 +33,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const activeTier = activeSubscription?.tier || shopRecord?.plan || "free";
 
-  // Catalog item dataset (10 static items for Phase 1)
-  const items = [
-    {
-      id: "cat_1",
-      type: "page",
-      name: "High-Converting Product Page (PDP)",
-      slug: "pdp-high-conversion",
-      block_handle: "pdp_high_conversion",
-      niche_tags: ["D2C", "Electronics", "Fashion"],
-      style_tags: ["Modern", "High-Converting"],
-      min_tier: "free",
-      description: "High-converting PDP layout featuring sticky product gallery, specs checklist, risk-free guarantee badge, and integrated courier pincode checker.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/pdp-demo",
-    },
-    {
-      id: "cat_2",
-      type: "page",
-      name: "Multi-Product Sales Landing Page",
-      slug: "landing-multi-product",
-      block_handle: "landing_multi_product",
-      niche_tags: ["Festive Drop", "Multi-Product"],
-      style_tags: ["Bold", "Vibrant"],
-      min_tier: "free",
-      description: "Full-page campaign landing layout featuring a hero offer banner, category grid, flagship product cards, and instant COD checkout buttons.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/landing-demo",
-    },
-    {
-      id: "cat_3",
-      type: "page",
-      name: "Brand Story & Founder About Page",
-      slug: "brand-story-about",
-      block_handle: "brand_story_about",
-      niche_tags: ["Brand Story", "D2C General"],
-      style_tags: ["Clean", "Minimalist"],
-      min_tier: "free",
-      description: "Founder note, brand timeline, mission philosophy, and press trust badges.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/about-demo",
-    },
-    {
-      id: "cat_4",
-      type: "page",
-      name: "Flash Sale & Drop Event Page",
-      slug: "flash-sale-event",
-      block_handle: "flash_sale_event",
-      niche_tags: ["Flash Sale", "Urgency"],
-      style_tags: ["High-Urgency"],
-      min_tier: "free",
-      description: "Countdown timer drop page with instant flash discount tags and deal claim buttons.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/flash-demo",
-    },
-    {
-      id: "cat_5",
-      type: "page",
-      name: "Product Comparison & Spec Matrix Page",
-      slug: "product-comparison",
-      block_handle: "product_comparison",
-      niche_tags: ["Comparison", "Tech"],
-      style_tags: ["Structured Matrix"],
-      min_tier: "free",
-      description: "Side-by-side spec comparison table highlighting recommended picks and feature differences.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/compare-demo",
-    },
-    {
-      id: "cat_6",
-      type: "page",
-      name: "FAQ & Trust Center Page",
-      slug: "faq-trust-center",
-      block_handle: "faq_trust_center",
-      niche_tags: ["Support", "Trust"],
-      style_tags: ["Accordion List"],
-      min_tier: "free",
-      description: "Collapsible accordion Q&A covering shipping timelines, COD rules, 7-day returns, and warranty policies.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/faq-demo",
-    },
-    {
-      id: "cat_7",
-      type: "section",
-      name: "India COD & Courier Pincode Checker Bar",
-      slug: "sec-india-pincode-cod",
-      block_handle: "sec_india_pincode_cod",
-      niche_tags: ["India Essential", "Logistics"],
-      style_tags: ["Interactive Input"],
-      min_tier: "free",
-      description: "Courier serviceability lookup input, COD badge, estimated delivery days, and UPI trustmarks.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/pincode-demo",
-    },
-    {
-      id: "cat_8",
-      type: "section",
-      name: "Photo Review Grid & Star Rating Summary",
-      slug: "sec-photo-review-grid",
-      block_handle: "sec_photo_review_grid",
-      niche_tags: ["Social Proof", "Reviews"],
-      style_tags: ["Photo Grid"],
-      min_tier: "free",
-      description: "Star rating summary header with customer review cards, verified buyer tags, and photo modal preview.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/reviews-demo",
-    },
-    {
-      id: "cat_9",
-      type: "section",
-      name: "Sticky Add-To-Cart Bar with Real Urgency",
-      slug: "sec-sticky-urgency-atc",
-      block_handle: "sec_sticky-urgency-atc",
-      niche_tags: ["Conversion", "Urgency"],
-      style_tags: ["Floating Bar"],
-      min_tier: "free",
-      description: "Scroll-triggered floating sticky ATC bar showing product image, price, inventory status, and instant add button.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/sticky-demo",
-    },
-    {
-      id: "cat_10",
-      type: "section",
-      name: "Product Bundle & Frequently Bought Together",
-      slug: "sec-product-bundle-upsell",
-      block_handle: "sec_product_bundle_upsell",
-      niche_tags: ["Upsell", "Bundles"],
-      style_tags: ["Dashed Bundle Card"],
-      min_tier: "free",
-      description: "Frequently bought together product card with total discount calculation and one-click add bundle.",
-      demo_url: "https://shopforge-demo.myshopify.com/pages/bundle-demo",
-    },
-  ];
-
   return {
     shopDomain,
     activeTier,
-    items,
+    themeStatus,
+    items: CATALOG_50_ITEMS,
   };
 };
 
 export default function ShopForgeCatalog() {
-  const { shopDomain, activeTier, items } = useLoaderData<typeof loader>();
+  const { shopDomain, activeTier, themeStatus, items } = useLoaderData<typeof loader>();
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   const filteredItems = items.filter((item) => {
@@ -172,12 +51,13 @@ export default function ShopForgeCatalog() {
   });
 
   return (
-    <Page title="Shop Forge — Page & Section Library">
-      <TitleBar title="Catalog | Shop Forge" />
+    <Page title="Shop Forge — Page & Section Library (50 Designs)">
+      <TitleBar title="Catalog (50 Items) | Shop Forge" />
       <BlockStack gap="500">
-        <Banner title="Phase 1 Library Active — 10 Free Static Designs Included" tone="info">
+        <Banner title={`Active Store Theme: ${themeStatus.activeThemeName}`} tone="info">
           <p>
-            All 10 designs are 100% token-driven and automatically inherit your active store theme colors and typography.
+            Theme Architecture Detected: <strong>{themeStatus.architecture.toUpperCase()}</strong>.
+            Items incompatible with your theme architecture show as <em>Coming Soon</em> and will never install broken.
           </p>
         </Banner>
 
@@ -188,72 +68,86 @@ export default function ShopForgeCatalog() {
               <Select
                 label="Component Type"
                 options={[
-                  { label: "All Items (10)", value: "all" },
-                  { label: "Full Pages (6)", value: "page" },
-                  { label: "Theme Sections (4)", value: "section" },
+                  { label: `All Items (${items.length})`, value: "all" },
+                  { label: "Full Pages (26)", value: "page" },
+                  { label: "Theme Sections (24)", value: "section" },
                 ]}
                 value={typeFilter}
                 onChange={(val) => setTypeFilter(val)}
               />
             </InlineStack>
             <Text as="span" variant="bodySm" tone="subdued">
-              Showing {filteredItems.length} of {items.length} items
+              Showing {filteredItems.length} of {items.length} render-verified items
             </Text>
           </InlineStack>
         </Card>
 
         {/* Items Grid */}
         <Grid>
-          {filteredItems.map((item) => (
-            <Grid.Cell key={item.id} columnSpan={{ xs: 12, sm: 6, md: 6, lg: 6, xl: 6 }}>
-              <Card>
-                <BlockStack gap="300">
-                  <InlineStack align="space-between" blockAlign="center">
-                    <Badge tone={item.type === "page" ? "attention" : "info"}>
-                      {item.type.toUpperCase()}
-                    </Badge>
-                    <Badge tone="success">FREE TIER</Badge>
-                  </InlineStack>
+          {filteredItems.map((item) => {
+            const isCompatible = item.theme_compat.includes(themeStatus.architecture as any);
 
-                  <Text as="h3" variant="headingSm">
-                    {item.name}
-                  </Text>
-
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    {item.description}
-                  </Text>
-
-                  <InlineStack gap="200">
-                    {item.niche_tags.map((tag) => (
-                      <Badge key={tag} tone="subdued">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </InlineStack>
-
-                  <Box paddingWithBorder="200" borderRadius="200" background="bg-surface-secondary">
+            return (
+              <Grid.Cell key={item.id} columnSpan={{ xs: 12, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                <Card>
+                  <BlockStack gap="300">
                     <InlineStack align="space-between" blockAlign="center">
-                      <Button
-                        url={item.demo_url}
-                        target="_blank"
-                        variant="tertiary"
-                      >
-                        Live Demo
-                      </Button>
+                      <InlineStack gap="200">
+                        <Badge tone={item.type === "page" ? "attention" : "info"}>
+                          {item.type.toUpperCase()}
+                        </Badge>
+                        <Badge tone={item.min_tier === "free" ? "success" : "warning"}>
+                          {item.min_tier.toUpperCase()} TIER
+                        </Badge>
+                      </InlineStack>
 
-                      <Button
-                        variant="primary"
-                        url={`https://${shopDomain}/admin/themes/current/editor?context=apps`}
-                        target="_blank"
-                      >
-                        Add to Store Theme
-                      </Button>
+                      {!isCompatible && <Badge tone="critical">COMING SOON</Badge>}
                     </InlineStack>
-                  </Box>
-                </BlockStack>
-              </Card>
-            </Grid.Cell>
-          ))}
+
+                    <Text as="h3" variant="headingSm">
+                      {item.name}
+                    </Text>
+
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      {item.description}
+                    </Text>
+
+                    <InlineStack gap="200">
+                      {item.niche_tags.map((tag) => (
+                        <Badge key={tag} tone="subdued">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </InlineStack>
+
+                    <Box paddingWithBorder="200" borderRadius="200" background="bg-surface-secondary">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <Button
+                          url={item.demo_url}
+                          target="_blank"
+                          variant="tertiary"
+                        >
+                          Live Demo
+                        </Button>
+
+                        {isCompatible ? (
+                          <Button
+                            variant="primary"
+                            url={`https://${shopDomain}/admin/themes/current/editor?context=apps`}
+                            target="_blank"
+                          >
+                            Add to Store Theme
+                          </Button>
+                        ) : (
+                          <Button disabled>Coming Soon for Theme</Button>
+                        )}
+                      </InlineStack>
+                    </Box>
+                  </BlockStack>
+                </Card>
+              </Grid.Cell>
+            );
+          })}
         </Grid>
       </BlockStack>
     </Page>
