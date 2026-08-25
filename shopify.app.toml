@@ -2,7 +2,7 @@
 
 name = "shop-forge"
 client_id = ""
-application_url = "https://example.com"
+application_url = "https://pagevault-production.up.railway.app"
 embedded = true
 
 [access_scopes]
@@ -11,9 +11,9 @@ scopes = "read_products,write_products,read_orders,write_orders,read_themes,writ
 
 [auth]
 redirect_urls = [
-  "https://example.com/auth/callback",
-  "https://example.com/auth/shopify/callback",
-  "https://example.com/api/auth/callback"
+  "https://pagevault-production.up.railway.app/auth/callback",
+  "https://pagevault-production.up.railway.app/auth/shopify/callback",
+  "https://pagevault-production.up.railway.app/api/auth/callback"
 ]
 
 [webhooks]
@@ -29,16 +29,21 @@ api_version = "2026-04"
 
   # Mandatory GDPR Privacy Compliance Webhooks
   [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/data_request"
+  uri = "https://pagevault-production.up.railway.app/webhooks/customers/data_request"
   compliance_topics = ["customers/data_request"]
 
   [[webhooks.subscriptions]]
-  uri = "/webhooks/customers/redact"
+  uri = "https://pagevault-production.up.railway.app/webhooks/customers/redact"
   compliance_topics = ["customers/redact"]
 
   [[webhooks.subscriptions]]
-  uri = "/webhooks/shop/redact"
+  uri = "https://pagevault-production.up.railway.app/webhooks/shop/redact"
   compliance_topics = ["shop/redact"]
+
+[app_proxy]
+url = "https://pagevault-production.up.railway.app/apps/shopforge"
+subpath = "shopforge"
+prefix = "apps"
 
 [pos]
 embedded = false
