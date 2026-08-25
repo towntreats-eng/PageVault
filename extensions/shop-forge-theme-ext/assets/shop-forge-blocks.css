@@ -1,0 +1,355 @@
+/* Shop Forge — Modern Store OS Design System & Block Styles */
+:root {
+  --sf-accent-color: #0f172a;
+  --sf-accent-hover: #1e293b;
+  --sf-success-color: #166534;
+  --sf-success-bg: #f0fdf4;
+  --sf-warning-color: #9a3412;
+  --sf-warning-bg: #fff7ed;
+  --sf-border-radius: 12px;
+  --sf-box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+  --sf-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scoped Container Root */
+.sf-block-root {
+  font-family: inherit;
+  color: var(--color-foreground, currentColor);
+  background-color: var(--color-background, transparent);
+  box-sizing: border-box;
+  margin: 20px 0;
+  padding: 0;
+  width: 100%;
+}
+
+.sf-block-root * {
+  box-sizing: border-box;
+}
+
+/* Common Utility Classes */
+.sf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.sf-badge-green {
+  background-color: var(--sf-success-bg);
+  color: var(--sf-success-color);
+  border: 1px solid rgba(22, 101, 52, 0.2);
+}
+
+.sf-badge-orange {
+  background-color: var(--sf-warning-bg);
+  color: var(--sf-warning-color);
+  border: 1px solid rgba(154, 52, 18, 0.2);
+}
+
+/* Section 1: India COD & Courier Pincode Serviceability Checker */
+.sf-pincode-card {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--sf-border-radius);
+  padding: 20px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--sf-box-shadow);
+}
+
+.sf-pincode-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sf-pincode-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sf-pincode-form {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+}
+
+@media (min-width: 480px) {
+  .sf-pincode-form {
+    flex-direction: row;
+  }
+}
+
+.sf-pincode-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: var(--sf-transition);
+}
+
+.sf-pincode-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.sf-pincode-btn {
+  padding: 10px 20px;
+  background-color: var(--sf-accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--sf-transition);
+}
+
+.sf-pincode-btn:hover {
+  background-color: var(--sf-accent-hover);
+}
+
+.sf-pincode-result {
+  margin-top: 14px;
+  font-size: 0.875rem;
+  display: none;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.sf-pincode-result.active {
+  display: block;
+}
+
+/* Section 2: Photo Review Grid */
+.sf-reviews-container {
+  padding: 24px 0;
+}
+
+.sf-reviews-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.sf-rating-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.sf-stars {
+  color: #f59e0b;
+  font-size: 1.2rem;
+}
+
+.sf-reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .sf-reviews-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sf-reviews-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.sf-review-card {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--sf-border-radius);
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: var(--sf-box-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: var(--sf-transition);
+}
+
+.sf-review-card:hover {
+  transform: translateY(-2px);
+}
+
+.sf-review-author {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sf-author-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sf-verified-tag {
+  font-size: 0.75rem;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sf-review-photo {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Section 3: Sticky Urgency Add-To-Cart Bar */
+.sf-sticky-atc-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 20px;
+  z-index: 999;
+  box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sf-sticky-atc-bar.visible {
+  transform: translateY(0);
+}
+
+.sf-sticky-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sf-sticky-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.sf-sticky-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.sf-sticky-price {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sf-sticky-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sf-sticky-btn {
+  padding: 12px 24px;
+  background-color: var(--sf-accent-color);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--sf-transition);
+}
+
+.sf-sticky-btn:hover {
+  background-color: var(--sf-accent-hover);
+}
+
+/* Section 4: Product Bundle & Upsell Card */
+.sf-bundle-card {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--sf-border-radius);
+  padding: 24px;
+  background: #f8fafc;
+  margin: 24px 0;
+}
+
+.sf-bundle-header {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sf-bundle-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+}
+
+@media (min-width: 640px) {
+  .sf-bundle-items {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.sf-bundle-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex: 1;
+}
+
+.sf-bundle-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.sf-plus-icon {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #64748b;
+  text-align: center;
+}
+
+.sf-bundle-footer {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sf-bundle-total-price {
+  font-size: 1.2rem;
+  font-weight: 800;
+}

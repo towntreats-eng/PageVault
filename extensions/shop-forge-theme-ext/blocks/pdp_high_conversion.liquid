@@ -1,0 +1,105 @@
+{% comment %}
+  Shop Forge — High-Converting Product Page (PDP) Layout Block
+  Full Page Catalog Item | Token-driven & Mobile First
+{% endcomment %}
+
+{{ 'shop-forge-blocks.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'shop-forge-blocks.js' | asset_url }}" defer></script>
+
+<div class="sf-block-root" id="sf-pdp-{{ block.id }}">
+  <div style="max-width: 1200px; margin: 0 auto; padding: 20px 16px;">
+    <div style="display: grid; grid-template-columns: 1fr; gap: 32px;" class="sf-pdp-grid">
+      <!-- Media Gallery -->
+      <div>
+        <img
+          src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80"
+          alt="High Conversion Product Preview"
+          style="width: 100%; border-radius: var(--sf-border-radius); box-shadow: var(--sf-box-shadow); object-fit: cover;"
+        >
+        <div style="display: flex; gap: 12px; margin-top: 12px;">
+          <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&auto=format&fit=crop&q=80" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid #0f172a;">
+          <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&auto=format&fit=crop&q=80" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; opacity: 0.7;">
+          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop&q=80" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; opacity: 0.7;">
+        </div>
+      </div>
+
+      <!-- Product Form & Details -->
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="sf-badge sf-badge-green" style="align-self: flex-start;">
+          ⚡ High Demand • Verified Original
+        </div>
+
+        <h1 style="font-size: 2rem; font-weight: 800; margin: 0; line-height: 1.2;">
+          {{ product.title | default: "Ultra-Comfort Signature Ergonomic Series" }}
+        </h1>
+
+        <div class="sf-rating-summary" style="justify-content: flex-start;">
+          <span class="sf-stars">★★★★★</span>
+          <span style="font-weight: 700;">4.9 / 5.0</span>
+          <span style="color: #64748b; font-size: 0.85rem;">(342 Verified Customer Reviews)</span>
+        </div>
+
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <span style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">
+            {{ product.price | default: "₹2,499" | money }}
+          </span>
+          <span style="font-size: 1.1rem; color: #94a3b8; text-decoration: line-through;">₹3,999</span>
+          <span class="sf-badge sf-badge-orange">Save 37%</span>
+        </div>
+
+        <p style="color: #475569; line-height: 1.6; font-size: 0.95rem; margin: 0;">
+          Crafted with medical-grade materials and designed for all-day comfort. Engineered for durability and backed by our 100-day risk-free money-back guarantee.
+        </p>
+
+        <!-- Feature List -->
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+          <li>✓ 100% Breathable Eco-Friendly Materials</li>
+          <li>✓ Free Express Shipping Across India</li>
+          <li>✓ Cash on Delivery (COD) Available</li>
+          <li>✓ 1-Year Manufacturer Replacement Warranty</li>
+        </ul>
+
+        <!-- Add To Cart Form -->
+        <form method="post" action="/cart/add" style="margin-top: 8px;">
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+          <button
+            type="submit"
+            class="sf-sticky-btn"
+            style="width: 100%; padding: 16px; font-size: 1.1rem; border-radius: 10px;"
+          >
+            Add To Cart — Free Shipping
+          </button>
+        </form>
+
+        <!-- Embedded India Pincode Checker -->
+        <div class="sf-pincode-card" style="margin-top: 16px;">
+          <div class="sf-pincode-header">
+            <span style="font-weight: 700; font-size: 0.9rem;">🚚 Check Delivery to Your Pincode</span>
+            <span class="sf-badge sf-badge-green">COD Ready</span>
+          </div>
+          <div class="sf-pincode-form">
+            <input type="text" class="sf-pincode-input" placeholder="Enter 6-digit PIN code" maxlength="6">
+            <button type="button" class="sf-pincode-btn">Check</button>
+          </div>
+          <div class="sf-pincode-result"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @media (min-width: 768px) {
+    .sf-pdp-grid {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "SF High-Conversion PDP",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

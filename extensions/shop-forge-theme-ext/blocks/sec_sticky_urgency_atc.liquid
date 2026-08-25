@@ -1,0 +1,65 @@
+{% comment %}
+  Shop Forge — Sticky Add-To-Cart Bar with Real Inventory Urgency Block
+  Growth Tier Feature | Token-driven & Responsive
+{% endcomment %}
+
+{{ 'shop-forge-blocks.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'shop-forge-blocks.js' | asset_url }}" defer></script>
+
+<div class="sf-sticky-atc-bar" id="sf-sticky-atc-{{ block.id }}">
+  <div class="sf-sticky-info">
+    {% if product.featured_image %}
+      <img
+        src="{{ product.featured_image | image_url: width: 100 }}"
+        alt="{{ product.title | escape }}"
+        class="sf-sticky-img"
+      >
+    {% endif %}
+    <div>
+      <div class="sf-sticky-title">{{ product.title | default: "Premium Selected Item" }}</div>
+      <div class="sf-sticky-price">
+        {% if product.price %}
+          {{ product.price | money }}
+        {% else %}
+          {{ block.settings.fallback_price | default: "₹1,499" }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="sf-sticky-actions">
+    {% if product.selected_or_first_available_variant.inventory_quantity > 0 and product.selected_or_first_available_variant.inventory_quantity <= 10 %}
+      <div class="sf-badge sf-badge-orange" style="display: none;">
+        ⚡ Only {{ product.selected_or_first_available_variant.inventory_quantity }} Left in Stock
+      </div>
+    {% endif %}
+
+    <form method="post" action="/cart/add" style="margin: 0;">
+      <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+      <button type="submit" class="sf-sticky-btn">
+        {{ block.settings.button_text | default: "Add To Cart — Instant Checkout" }}
+      </button>
+    </form>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "SF Sticky ATC Bar",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Label",
+      "default": "Add To Cart — Instant Checkout"
+    },
+    {
+      "type": "text",
+      "id": "fallback_price",
+      "label": "Fallback Price (Preview Mode)",
+      "default": "₹1,499"
+    }
+  ]
+}
+{% endschema %}
