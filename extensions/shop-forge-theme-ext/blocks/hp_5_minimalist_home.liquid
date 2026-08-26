@@ -1,0 +1,90 @@
+{% comment %}
+  Shop Forge — Home Page Template 5: Modern Minimalist Home & Artisanal Lifestyle
+  Warm Terracotta & Natural Cream Layout for Furniture, Home Decor & Artisanal Crafts.
+{% endcomment %}
+
+<div class="sf-hp5-wrapper">
+  <!-- Ticker -->
+  <div class="sf-hp5-ticker">
+    🏡 HANDMADE BY ARTISANS ACROSS INDIA — FREE SHIPPING & EASY ASSEMBLY GUARANTEE
+  </div>
+
+  <!-- Header -->
+  <header class="sf-hp5-header">
+    <div class="sf-hp5-container sf-hp5-flex-between">
+      <div class="sf-hp5-logo">TERRA <span>HOMES</span></div>
+      <nav class="sf-hp5-nav">
+        <a href="#">Furniture</a>
+        <a href="#">Lighting</a>
+        <a href="#">Ceramics</a>
+        <a href="#">Artisan Story</a>
+      </nav>
+      <button type="button" class="sf-hp5-btn-terra" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">🛒 MY BASKET</button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="sf-hp5-hero">
+    <div class="sf-hp5-container sf-hp5-hero-grid">
+      <div>
+        <span class="sf-hp5-tag">🌾 SUSTAINABLE LIVING</span>
+        <h1>ARTISANAL HOME DECOR TAILORED FOR MODERN SPACES</h1>
+        <p>Hand-crafted ceramic vases, solid teakwood furniture, and organic cotton textiles designed for peaceful living.</p>
+        <div class="sf-hp5-actions">
+          <a href="#" class="sf-hp5-btn-hero">SHOP CATALOGUE →</a>
+        </div>
+      </div>
+      <div class="sf-hp5-hero-box">
+        <div class="sf-hp5-interior-showcase">
+          <span>🌿 Handcrafted Solid Teak Collection</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Heavy Item Delivery Checker -->
+  <section class="sf-hp5-section sf-hp5-bg-warm">
+    <div class="sf-hp5-container sf-hp5-text-center">
+      <h2>🚚 Heavy Item Delivery & Pincode Lookup</h2>
+      <p>Verify assembly service and door-step courier delivery timelines in &lt;10ms.</p>
+      <div class="sf-hp5-pincode-box">
+        <input type="text" placeholder="Enter 6-Digit Pincode" class="sf-hp5-input" value="110001">
+        <button type="button" class="sf-hp5-btn-terra">CHECK DELIVERY</button>
+      </div>
+      <p style="font-size:0.85rem; color:#059669; margin-top:12px;">✔ Express Delivery & Free Doorstep Assembly Available in New Delhi</p>
+    </div>
+  </section>
+</div>
+
+<style>
+  .sf-hp5-wrapper { background:#fffbeb; color:#334155; font-family:-apple-system,BlinkMacSystemFont,sans-serif; }
+  .sf-hp5-ticker { background:#c2410c; color:#ffffff; text-align:center; padding:10px; font-size:0.8rem; font-weight:700; }
+  .sf-hp5-header { background:#ffffff; border-bottom:1px solid #fef3c7; padding:16px 0; }
+  .sf-hp5-container { max-width:1140px; margin:0 auto; padding:0 24px; }
+  .sf-hp5-flex-between { display:flex; justify-content:space-between; align-items:center; }
+  .sf-hp5-logo { font-size:1.5rem; font-weight:800; color:#c2410c; }
+  .sf-hp5-logo span { font-weight:400; color:#78350f; }
+  .sf-hp5-nav a { color:#475569; text-decoration:none; margin:0 14px; font-weight:600; font-size:0.9rem; }
+  .sf-hp5-btn-terra { background:#c2410c; color:#ffffff; border:none; padding:10px 22px; border-radius:20px; font-weight:700; cursor:pointer; }
+  .sf-hp5-hero { padding:80px 0; background:#fef3c7; }
+  .sf-hp5-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  @media(max-width:768px){ .sf-hp5-hero-grid { grid-template-columns:1fr; text-align:center; } }
+  .sf-hp5-tag { background:#ffffff; color:#c2410c; padding:6px 14px; border-radius:20px; font-weight:700; font-size:0.8rem; display:inline-block; margin-bottom:16px; }
+  .sf-hp5-hero h1 { font-size:2.6rem; font-weight:800; color:#78350f; line-height:1.2; margin:0 0 16px 0; }
+  .sf-hp5-hero p { font-size:1.1rem; color:#92400e; line-height:1.5; margin:0 0 28px 0; }
+  .sf-hp5-btn-hero { background:#c2410c; color:#ffffff; padding:16px 32px; border-radius:30px; font-weight:800; text-decoration:none; display:inline-block; }
+  .sf-hp5-hero-box { height:340px; background:#ffffff; border-radius:24px; display:flex; align-items:center; justify-content:center; border:1px solid #fde68a; font-weight:700; color:#92400e; }
+  .sf-hp5-section { padding:64px 0; }
+  .sf-hp5-bg-warm { background:#ffffff; }
+  .sf-hp5-text-center { text-align:center; }
+  .sf-hp5-pincode-box { display:flex; justify-content:center; gap:10px; margin-top:20px; }
+  .sf-hp5-input { padding:10px 18px; border-radius:20px; border:1px solid #cbd5e1; width:220px; font-size:0.95rem; }
+</style>
+
+{% schema %}
+{
+  "name": "Home Template 5 (Minimalist)",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}
