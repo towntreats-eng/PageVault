@@ -1,0 +1,89 @@
+{% comment %}
+  Shop Forge — HP1 Section 9: Customer Reviews & Photo Testimonials Grid
+{% endcomment %}
+
+<div class="sf-hp1-reviews-section">
+  <div class="sf-hp1-container">
+    <div class="sf-hp1-section-header">
+      <span class="sf-hp1-section-tag">VERIFIED REVIEWS</span>
+      <h2>What 14,000+ Customers Say</h2>
+    </div>
+
+    <div class="sf-hp1-reviews-grid">
+      <div class="sf-hp1-review-card">
+        <div class="sf-hp1-review-stars">★★★★★</div>
+        <p class="sf-hp1-review-text">"Absurdly fast delivery to Bangalore! The product quality surpassed all my expectations. Will definitely order again."</p>
+        <div class="sf-hp1-review-author">
+          <strong>Rohan Sharma</strong>
+          <span class="sf-hp1-verified-badge">✔ Verified Buyer (Bangalore)</span>
+        </div>
+      </div>
+
+      <div class="sf-hp1-review-card">
+        <div class="sf-hp1-review-stars">★★★★★</div>
+        <p class="sf-hp1-review-text">"The Cash on Delivery service was seamless. Pincode checker worked accurately for my Tier-2 town in Gujarat!"</p>
+        <div class="sf-hp1-review-author">
+          <strong>Priya Patel</strong>
+          <span class="sf-hp1-verified-badge">✔ Verified Buyer (Surat)</span>
+        </div>
+      </div>
+
+      <div class="sf-hp1-review-card">
+        <div class="sf-hp1-review-stars">★★★★★</div>
+        <p class="sf-hp1-review-text">"100% genuine products. The WhatsApp team resolved my queries within 5 minutes of placing my order."</p>
+        <div class="sf-hp1-review-author">
+          <strong>Ankit Verma</strong>
+          <span class="sf-hp1-verified-badge">✔ Verified Buyer (Delhi)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-reviews-section {
+    background: #0f172a;
+    padding: 70px 24px;
+    color: #ffffff;
+  }
+  .sf-hp1-reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .sf-hp1-review-card {
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 28px;
+  }
+  .sf-hp1-review-stars {
+    color: #fbbf24;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+  }
+  .sf-hp1-review-text {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+  }
+  .sf-hp1-review-author strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.95rem;
+  }
+  .sf-hp1-verified-badge {
+    color: #22c55e;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Customer Reviews",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,66 @@
+{% comment %}
+  Shop Forge — HP1 Section 12: Sticky Add To Cart Bar (Urgency Counter)
+{% endcomment %}
+
+<div class="sf-hp1-sticky-bar-wrapper">
+  <div class="sf-hp1-sticky-bar-inner">
+    <div class="sf-hp1-sticky-info">
+      <strong>Flagship D2C Edition Pack</strong>
+      <span class="sf-hp1-sticky-price">₹1,499</span>
+      <span class="sf-hp1-sticky-stock">🔥 Only 4 Units Left in Stock!</span>
+    </div>
+    <button type="button" class="sf-hp1-btn-sticky" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">
+      ⚡ ADD TO CART NOW
+    </button>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-sticky-bar-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #0f172a;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 24px;
+    box-shadow: 0 -4px 25px rgba(0,0,0,0.4);
+    z-index: 9999;
+    box-sizing: border-box;
+  }
+  .sf-hp1-sticky-bar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ffffff;
+  }
+  .sf-hp1-sticky-price {
+    color: #22c55e;
+    font-weight: 900;
+    margin: 0 12px;
+  }
+  .sf-hp1-sticky-stock {
+    color: #ef4444;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+  .sf-hp1-btn-sticky {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #000000;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 30px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Sticky ATC Bar",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

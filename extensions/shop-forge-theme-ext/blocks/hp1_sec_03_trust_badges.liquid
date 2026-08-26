@@ -1,0 +1,81 @@
+{% comment %}
+  Shop Forge — HP1 Section 3: Trust & Guarantee Badges Grid
+{% endcomment %}
+
+<div class="sf-hp1-trust-section">
+  <div class="sf-hp1-container">
+    <div class="sf-hp1-trust-grid">
+      <div class="sf-hp1-trust-card">
+        <div class="sf-hp1-trust-icon">🚚</div>
+        <div class="sf-hp1-trust-title">Free Express Shipping</div>
+        <div class="sf-hp1-trust-desc">Dispatched within 24 hours from local hubs</div>
+      </div>
+
+      <div class="sf-hp1-trust-card">
+        <div class="sf-hp1-trust-icon">💵</div>
+        <div class="sf-hp1-trust-title">Cash on Delivery</div>
+        <div class="sf-hp1-trust-desc">Available for 26,000+ Indian pincodes</div>
+      </div>
+
+      <div class="sf-hp1-trust-card">
+        <div class="sf-hp1-trust-icon">🛡️</div>
+        <div class="sf-hp1-trust-title">1-Year Warranty</div>
+        <div class="sf-hp1-trust-desc">100% replacement guarantee included</div>
+      </div>
+
+      <div class="sf-hp1-trust-card">
+        <div class="sf-hp1-trust-icon">💳</div>
+        <div class="sf-hp1-trust-title">Instant UPI Refunds</div>
+        <div class="sf-hp1-trust-desc">No hassle 7-day doorstep return policy</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-trust-section {
+    background: #0f172a;
+    padding: 40px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sf-hp1-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .sf-hp1-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .sf-hp1-trust-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+  .sf-hp1-trust-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+  .sf-hp1-trust-title {
+    color: #f8fafc;
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+  }
+  .sf-hp1-trust-desc {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Trust Badges Grid",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

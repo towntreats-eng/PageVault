@@ -1,0 +1,149 @@
+{% comment %}
+  Shop Forge — HP1 Section 4: Bento Feature Grid (6-Tile Layout)
+{% endcomment %}
+
+<div class="sf-hp1-bento-section">
+  <div class="sf-hp1-container">
+    <div class="sf-hp1-section-header">
+      <span class="sf-hp1-section-tag">ENGINEERED EXCELLENCE</span>
+      <h2>Why Top D2C Brands Switch to Shop Forge</h2>
+      <p>Built with modern technology stack, ultra-fast performance, and conversion-first user interfaces.</p>
+    </div>
+
+    <div class="sf-hp1-bento-grid">
+      <!-- Tile 1: Large Feature -->
+      <div class="sf-hp1-bento-card sf-hp1-bento-large">
+        <div class="sf-hp1-bento-tag">⚡ ULTRA-FAST</div>
+        <h3>Sub-50ms Global Page Load Speed</h3>
+        <p>Pre-rendered asset delivery with edge CDN caching so your customers never experience lag.</p>
+        <div class="sf-hp1-bento-metric">99.8% Core Web Vitals Score</div>
+      </div>
+
+      <!-- Tile 2 -->
+      <div class="sf-hp1-bento-card">
+        <div class="sf-hp1-bento-icon">🇮🇳</div>
+        <h3>India Cash on Delivery Engine</h3>
+        <p>Built-in pincode serviceability validator & OTP verification to cut RTO losses by up to 40%.</p>
+      </div>
+
+      <!-- Tile 3 -->
+      <div class="sf-hp1-bento-card">
+        <div class="sf-hp1-bento-icon">💬</div>
+        <h3>WhatsApp Conversion Assistant</h3>
+        <p>Automated cart recovery & order updates delivered directly to your buyers' phones.</p>
+      </div>
+
+      <!-- Tile 4 -->
+      <div class="sf-hp1-bento-card">
+        <div class="sf-hp1-bento-icon">📈</div>
+        <h3>CRO Slide-Out Cart Drawer</h3>
+        <p>Dynamic free shipping progress bar & 1-click order upsells built straight into the cart.</p>
+      </div>
+
+      <!-- Tile 5: Large Feature -->
+      <div class="sf-hp1-bento-card sf-hp1-bento-large">
+        <div class="sf-hp1-bento-tag">💎 RENDER VERIFIED</div>
+        <h3>100% Theme Extension Compatibility</h3>
+        <p>Never breaks your existing Shopify theme code. Seamlessly installs as modular App Blocks.</p>
+        <div class="sf-hp1-bento-metric">Works with OS 2.0 & Horizon Themes</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-bento-section {
+    background: #020617;
+    padding: 80px 24px;
+    color: #ffffff;
+  }
+  .sf-hp1-section-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .sf-hp1-section-tag {
+    color: #818cf8;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 10px;
+  }
+  .sf-hp1-section-header h2 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 0 0 12px 0;
+    color: #f8fafc;
+  }
+  .sf-hp1-section-header p {
+    color: #94a3b8;
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .sf-hp1-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .sf-hp1-bento-card {
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .sf-hp1-bento-large {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+  }
+  .sf-hp1-bento-tag {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: inline-block;
+    align-self: flex-start;
+    margin-bottom: 20px;
+  }
+  .sf-hp1-bento-icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+  .sf-hp1-bento-card h3 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    color: #f8fafc;
+  }
+  .sf-hp1-bento-card p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+  }
+  .sf-hp1-bento-metric {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #22c55e;
+  }
+
+  @media (max-width: 900px) {
+    .sf-hp1-bento-grid { grid-template-columns: 1fr; }
+    .sf-hp1-bento-large { grid-column: span 1; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Bento Feature Grid",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

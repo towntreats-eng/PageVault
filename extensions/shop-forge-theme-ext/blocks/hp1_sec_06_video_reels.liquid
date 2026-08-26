@@ -1,0 +1,101 @@
+{% comment %}
+  Shop Forge — HP1 Section 6: Shoppable Social Video Reels (UGC Proof)
+{% endcomment %}
+
+<div class="sf-hp1-reels-section">
+  <div class="sf-hp1-container">
+    <div class="sf-hp1-section-header">
+      <span class="sf-hp1-section-tag">COMMUNITY REELS</span>
+      <h2>Watch Customers Unbox & Review</h2>
+      <p>Real stories, unboxing videos, and honest experiences shared by our buyers.</p>
+    </div>
+
+    <div class="sf-hp1-reels-grid">
+      {% for i in (1..4) %}
+        <div class="sf-hp1-reel-card">
+          <div class="sf-hp1-reel-media">
+            <span class="sf-hp1-reel-badge">▶ PLAY REEL</span>
+            <div class="sf-hp1-reel-avatar">👤 @buyer_{{ i }}</div>
+          </div>
+          <div class="sf-hp1-reel-footer">
+            <div class="sf-hp1-reel-prod-title">Edition {{ i }} Unboxing</div>
+            <button type="button" class="sf-hp1-reel-buy-btn" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">
+              🛍️ SHOP THIS REEL
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-reels-section {
+    background: #020617;
+    padding: 70px 24px;
+    color: #ffffff;
+  }
+  .sf-hp1-reels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  .sf-hp1-reel-card {
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .sf-hp1-reel-media {
+    height: 320px;
+    background: linear-gradient(180deg, #1e1b4b 0%, #090d16 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sf-hp1-reel-badge {
+    background: rgba(0,0,0,0.6);
+    color: #ffffff;
+    backdrop-filter: blur(8px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+  .sf-hp1-reel-avatar {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+  .sf-hp1-reel-footer {
+    padding: 16px;
+  }
+  .sf-hp1-reel-prod-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+  .sf-hp1-reel-buy-btn {
+    width: 100%;
+    background: #22c55e;
+    color: #000000;
+    border: none;
+    padding: 10px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Shoppable Video Reels",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

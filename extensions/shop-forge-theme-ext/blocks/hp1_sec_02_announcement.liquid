@@ -1,0 +1,67 @@
+{% comment %}
+  Shop Forge — HP1 Section 2: Announcement Ticker Marquee Bar
+{% endcomment %}
+
+<div class="sf-hp1-marquee-wrapper">
+  <div class="sf-hp1-marquee-track">
+    <div class="sf-hp1-marquee-content">
+      <span>🚚 FREE EXPRESS DELIVERY ACROSS INDIA</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>💳 EXTRA 5% OFF ON ALL PREPAID UPI ORDERS (CODE: UPI5)</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>🛡️ 100% GENUINE PRODUCT & 7-DAY EASY REPLACEMENT</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>⭐ OVER 15,000+ 5-STAR RATINGS</span>
+      <span class="sf-hp1-dot">•</span>
+    </div>
+    <div class="sf-hp1-marquee-content" aria-hidden="true">
+      <span>🚚 FREE EXPRESS DELIVERY ACROSS INDIA</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>💳 EXTRA 5% OFF ON ALL PREPAID UPI ORDERS (CODE: UPI5)</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>🛡️ 100% GENUINE PRODUCT & 7-DAY EASY REPLACEMENT</span>
+      <span class="sf-hp1-dot">•</span>
+      <span>⭐ OVER 15,000+ 5-STAR RATINGS</span>
+      <span class="sf-hp1-dot">•</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-marquee-wrapper {
+    background: #4f46e5;
+    color: #ffffff;
+    overflow: hidden;
+    padding: 10px 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+  .sf-hp1-marquee-track {
+    display: flex;
+    width: 200%;
+    animation: sfMarquee 25s linear infinite;
+  }
+  .sf-hp1-marquee-content {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 50%;
+  }
+  .sf-hp1-dot {
+    color: #a5b4fc;
+    margin: 0 12px;
+  }
+  @keyframes sfMarquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP1: Marquee Ticker",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

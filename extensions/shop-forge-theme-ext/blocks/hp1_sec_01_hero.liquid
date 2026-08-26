@@ -1,0 +1,204 @@
+{% comment %}
+  Shop Forge — HP1 Section 1: Hero Banner (Dark Mode Glassmorphism & Animated Live Counter)
+{% endcomment %}
+
+<div class="sf-hp1-hero-container">
+  <div class="sf-hp1-hero-backdrop"></div>
+  <div class="sf-hp1-hero-content">
+    <div class="sf-hp1-viewer-badge">
+      <span class="sf-hp1-pulse-dot"></span>
+      <span class="sf-hp1-viewer-text">🔥 <strong id="sf-live-counter">184</strong> Merchants & Customers Viewing Right Now</span>
+    </div>
+    
+    <h1 class="sf-hp1-hero-headline">
+      {{ block.settings.hero_title | default: "ULTIMATE D2C FLAGSHIP STORE ENGINE" }}
+    </h1>
+    
+    <p class="sf-hp1-hero-subheadline">
+      {{ block.settings.hero_subtitle | default: "Engineered with 18+ high-converting CRO sections, 1-click quick buy, dynamic pincode checker, and instant checkout." }}
+    </p>
+
+    <div class="sf-hp1-hero-actions">
+      <a href="#hp1-trending" class="sf-hp1-btn-primary">
+        {{ block.settings.primary_btn_text | default: "EXPLORE BEST SELLERS →" }}
+      </a>
+      <a href="#hp1-quiz" class="sf-hp1-btn-secondary">
+        {{ block.settings.secondary_btn_text | default: "TAKE PRODUCT FINDER QUIZ" }}
+      </a>
+    </div>
+
+    <div class="sf-hp1-hero-proof-row">
+      <div class="sf-hp1-avatar-group">
+        <div class="sf-hp1-avatar" style="background:#3b82f6;">⭐</div>
+        <div class="sf-hp1-avatar" style="background:#10b981;">💎</div>
+        <div class="sf-hp1-avatar" style="background:#f59e0b;">⚡</div>
+      </div>
+      <div class="sf-hp1-proof-rating">
+        <span class="sf-hp1-stars">★★★★★</span>
+        <span class="sf-hp1-rating-num">4.95 / 5.0</span>
+        <span class="sf-hp1-rating-label">From 14,200+ Verified Buyers</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp1-hero-container {
+    position: relative;
+    background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 70%, #020617 100%);
+    color: #ffffff;
+    padding: 90px 24px 70px 24px;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sf-hp1-hero-backdrop {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('data:image/svg+xml,<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><g fill="%236366f1" fill-opacity="0.07"><circle cx="20" cy="20" r="1"/></g></svg>');
+    pointer-events: none;
+  }
+  .sf-hp1-hero-content {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    z-index: 2;
+  }
+  .sf-hp1-viewer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(129, 140, 248, 0.3);
+    backdrop-filter: blur(12px);
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #a5b4fc;
+    margin-bottom: 24px;
+  }
+  .sf-hp1-pulse-dot {
+    width: 10px;
+    height: 10px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #22c55e;
+    animation: sfPulse 1.8s infinite;
+  }
+  @keyframes sfPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  }
+  .sf-hp1-hero-headline {
+    font-size: 3.2rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin: 0 0 20px 0;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .sf-hp1-hero-subheadline {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    max-width: 720px;
+    margin: 0 auto 36px auto;
+    line-height: 1.6;
+  }
+  .sf-hp1-hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .sf-hp1-btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: #ffffff;
+    padding: 16px 36px;
+    border-radius: 40px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    text-decoration: none;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .sf-hp1-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.5);
+  }
+  .sf-hp1-btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    padding: 16px 32px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-decoration: none;
+    backdrop-filter: blur(10px);
+  }
+  .sf-hp1-hero-proof-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+  .sf-hp1-avatar-group {
+    display: flex;
+  }
+  .sf-hp1-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-left: -10px;
+  }
+  .sf-hp1-avatar:first-child { margin-left: 0; }
+  .sf-hp1-proof-rating {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+  }
+  .sf-hp1-stars { color: #fbbf24; font-size: 0.9rem; letter-spacing: 2px; }
+  .sf-hp1-rating-num { font-weight: 800; font-size: 0.85rem; color: #f8fafc; }
+  .sf-hp1-rating-label { font-size: 0.75rem; color: #64748b; }
+
+  @media (max-width: 768px) {
+    .sf-hp1-hero-headline { font-size: 2.2rem; }
+    .sf-hp1-hero-subheadline { font-size: 1rem; }
+  }
+</style>
+
+<script>
+  (function() {
+    var countEl = document.getElementById('sf-live-counter');
+    if (countEl) {
+      setInterval(function() {
+        var curr = parseInt(countEl.innerText) || 184;
+        var delta = Math.floor(Math.random() * 5) - 2;
+        var next = Math.max(140, Math.min(290, curr + delta));
+        countEl.innerText = next;
+      }, 4000);
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "HP1: Hero Glassmorphism",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "hero_title", "label": "Hero Title", "default": "ULTIMATE D2C FLAGSHIP STORE ENGINE" },
+    { "type": "text", "id": "hero_subtitle", "label": "Hero Subtitle", "default": "Engineered with 18+ high-converting CRO sections." },
+    { "type": "text", "id": "primary_btn_text", "label": "Primary Button Label", "default": "EXPLORE BEST SELLERS →" }
+  ]
+}
+{% endschema %}
