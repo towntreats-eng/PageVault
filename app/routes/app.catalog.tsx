@@ -84,6 +84,32 @@ export default function ShopForgeCatalog() {
           </p>
         </Banner>
 
+        {/* Merchant Guide: How to see and add pages to your Shopify Store */}
+        <Card background="bg-surface-secondary">
+          <BlockStack gap="300">
+            <Text as="h2" variant="headingMd">
+              💡 How to See & Add These Pages to Your Shopify Store:
+            </Text>
+            <InlineStack gap="400" wrap>
+              <Box background="bg-surface" padding="300" borderRadius="200">
+                <Text as="p" variant="bodySm">
+                  <strong>1️⃣ Visual Preview:</strong> Click <strong>"👁️ Live Demo Preview"</strong> on any item to view live Desktop & Mobile designs.
+                </Text>
+              </Box>
+              <Box background="bg-surface" padding="300" borderRadius="200">
+                <Text as="p" variant="bodySm">
+                  <strong>2️⃣ Open Theme Editor:</strong> Click <strong>"Add to Store Theme"</strong> to open your Shopify Theme Editor directly.
+                </Text>
+              </Box>
+              <Box background="bg-surface" padding="300" borderRadius="200">
+                <Text as="p" variant="bodySm">
+                  <strong>3️⃣ Insert App Section:</strong> Inside Theme Editor, click <strong>"Add Section"</strong> → Select <strong>"Apps"</strong> → Choose <strong>"Shop Forge Conversion Engine"</strong>!
+                </Text>
+              </Box>
+            </InlineStack>
+          </BlockStack>
+        </Card>
+
         {/* Filters */}
         <Card>
           <InlineStack align="space-between" blockAlign="center">
