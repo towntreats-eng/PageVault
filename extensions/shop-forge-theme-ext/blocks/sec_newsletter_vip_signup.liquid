@@ -1,0 +1,73 @@
+{% comment %}
+  Shop Forge — VIP Loyalty Club Signup & Discount Box
+  Generates high lead capture with instant coupon code delivery.
+{% endcomment %}
+
+<div class="sf-newsletter-section sf-section-padding" style="background-color: {{ block.settings.bg_color }}; color: {{ block.settings.text_color }};">
+  <div class="sf-container sf-text-center sf-newsletter-box">
+    <span class="sf-badge sf-badge-primary">JOIN THE CLUB</span>
+    <h2 class="sf-title-lg" style="color: {{ block.settings.text_color }};">{{ block.settings.heading }}</h2>
+    <p class="sf-subtitle" style="color: {{ block.settings.text_muted }};">{{ block.settings.subheading }}</p>
+
+    <form class="sf-newsletter-form" onsubmit="event.preventDefault(); alert('🎉 Success! Your 10% OFF Coupon Code is VIP10');">
+      <input type="email" placeholder="Enter your email address" required class="sf-newsletter-input">
+      <button type="submit" class="sf-btn sf-btn-primary sf-newsletter-btn">
+        CLAIM 10% OFF →
+      </button>
+    </form>
+
+    <p class="sf-form-privacy-note">🔒 We respect your privacy. Unsubscribe anytime in 1 click.</p>
+  </div>
+</div>
+
+<style>
+  .sf-newsletter-box {
+    max-width: 680px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 48px 32px;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    border: 1px solid #f3f4f6;
+  }
+  .sf-newsletter-form {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 600px) {
+    .sf-newsletter-form { flex-direction: column; }
+  }
+  .sf-newsletter-input {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: 30px;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    outline: none;
+  }
+  .sf-newsletter-btn {
+    padding: 14px 28px;
+    font-weight: 700;
+  }
+  .sf-form-privacy-note {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: 14px;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "VIP Newsletter Signup",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Unlock 10% OFF Your First Order" },
+    { "type": "text", "id": "subheading", "label": "Subheading", "default": "Join 50,000+ insiders to receive VIP discounts, early festive drop access & secret offers." },
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#eff6ff" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#1e3a8a" },
+    { "type": "color", "id": "text_muted", "label": "Subheading Color", "default": "#3b82f6" }
+  ]
+}
+{% endschema %}

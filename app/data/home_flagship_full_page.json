@@ -1,0 +1,150 @@
+{
+  "name": "High-Converting D2C Flagship Home Page (18+ CRO Sections)",
+  "sections": {
+    "section_1_sticky_header": {
+      "type": "sec_header_announcement",
+      "settings": {
+        "logo_text": "SHOP FORGE D2C",
+        "ticker_msg_1": "FREE Delivery across India on all prepaid orders!",
+        "ticker_msg_2": "Extra 5% OFF on UPI | Code: UPI5"
+      }
+    },
+    "section_2_hero_banner": {
+      "type": "sec_hero_flagship_banner",
+      "settings": {
+        "heading": "Engineered for Maximum D2C Conversions",
+        "subheading": "Experience high-performing modular storefront design built for rapid growth, high trust, and 1-click checkout.",
+        "live_viewer_count": "148",
+        "cta_primary_text": "SHOP BEST-SELLERS",
+        "cta_primary_url": "/collections/all"
+      }
+    },
+    "section_3_trust_guarantee": {
+      "type": "sec_trust_badges_guarantee",
+      "settings": {
+        "heading_1": "Free Express Delivery",
+        "heading_2": "Cash On Delivery",
+        "heading_3": "7-Day Easy Returns",
+        "heading_4": "Encrypted Checkout"
+      }
+    },
+    "section_4_bento_grid_features": {
+      "type": "sec_bento_grid_features",
+      "settings": {
+        "heading": "Designed for Performance & Unmatched Elegance",
+        "subheading": "Every detail has been obsessively tested to deliver the highest conversion rates."
+      }
+    },
+    "section_5_trending_carousel": {
+      "type": "sec_trending_products_carousel",
+      "settings": {
+        "heading": "Most Loved Best-Sellers This Season"
+      }
+    },
+    "section_6_customer_video_reels": {
+      "type": "sec_customer_video_reels",
+      "settings": {
+        "heading": "Real Buyers. Real Unboxing Stories.",
+        "subheading": "Watch authentic customer video feedback from verified purchases across India."
+      }
+    },
+    "section_7_before_after_slider": {
+      "type": "sec_before_after_slider",
+      "settings": {
+        "heading": "Real Results You Can See & Feel",
+        "subheading": "Based on a 14-day consumer perception study."
+      }
+    },
+    "section_8_bundle_upsell": {
+      "type": "sec_product_bundle_upsell",
+      "settings": {
+        "heading": "Frequently Bought Together (Save 20%)"
+      }
+    },
+    "section_9_press_media": {
+      "type": "sec_press_media_endorsements",
+      "settings": {
+        "heading": "As Featured in Top Publications"
+      }
+    },
+    "section_10_photo_review_grid": {
+      "type": "sec_photo_review_grid",
+      "settings": {
+        "heading": "2,400+ Verified 5-Star Customer Reviews"
+      }
+    },
+    "section_11_pincode_checker": {
+      "type": "sec_india_pincode_cod",
+      "settings": {
+        "heading": "Check Pincode Serviceability & Delivery Days"
+      }
+    },
+    "section_12_flash_sale_event": {
+      "type": "flash_sale_event",
+      "settings": {
+        "heading": "Festive Drop Flash Sale — Ends Soon!"
+      }
+    },
+    "section_13_product_comparison": {
+      "type": "product_comparison",
+      "settings": {
+        "heading": "Why We Outperform Traditional Brands"
+      }
+    },
+    "section_14_brand_story": {
+      "type": "brand_story_about",
+      "settings": {
+        "heading": "Our Journey & Purpose"
+      }
+    },
+    "section_15_faq_accordion": {
+      "type": "faq_trust_center",
+      "settings": {
+        "heading": "Frequently Asked Questions"
+      }
+    },
+    "section_16_vip_newsletter": {
+      "type": "sec_newsletter_vip_signup",
+      "settings": {
+        "heading": "Unlock 10% OFF Your First Order"
+      }
+    },
+    "section_17_sticky_atc": {
+      "type": "sec_sticky_urgency_atc",
+      "settings": {}
+    },
+    "section_18_whatsapp_chat": {
+      "type": "sec_whatsapp_floating_chat",
+      "settings": {
+        "whatsapp_number": "919876543210"
+      }
+    },
+    "section_19_cart_drawer": {
+      "type": "sec_cart_drawer",
+      "settings": {
+        "free_shipping_threshold": "499"
+      }
+    }
+  },
+  "order": [
+    "section_1_sticky_header",
+    "section_2_hero_banner",
+    "section_3_trust_guarantee",
+    "section_4_bento_grid_features",
+    "section_5_trending_carousel",
+    "section_6_customer_video_reels",
+    "section_7_before_after_slider",
+    "section_8_bundle_upsell",
+    "section_9_press_media",
+    "section_10_photo_review_grid",
+    "section_11_pincode_checker",
+    "section_12_flash_sale_event",
+    "section_13_product_comparison",
+    "section_14_brand_story",
+    "section_15_faq_accordion",
+    "section_16_vip_newsletter",
+    "section_17_sticky_atc",
+    "section_18_whatsapp_chat",
+    "section_19_cart_drawer"
+  ]
+}

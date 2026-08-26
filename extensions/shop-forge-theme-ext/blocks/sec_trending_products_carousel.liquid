@@ -1,0 +1,160 @@
+{% comment %}
+  Shop Forge — Trending Products Grid & Slider Section
+  Displays featured collection items with Quick Buy, star ratings & COD badges.
+{% endcomment %}
+
+<div class="sf-trending-section sf-section-padding" style="background-color: {{ block.settings.bg_color }};">
+  <div class="sf-container">
+    <div class="sf-section-header sf-flex-between sf-align-center">
+      <div>
+        <span class="sf-badge sf-badge-primary">TRENDING NOW</span>
+        <h2 class="sf-title-lg" style="color: {{ block.settings.text_color }};">{{ block.settings.heading }}</h2>
+      </div>
+      <a href="/collections/all" class="sf-btn sf-btn-outline">View All Products →</a>
+    </div>
+
+    <div class="sf-product-grid">
+      {% for i in (1..4) %}
+        <div class="sf-product-card">
+          <div class="sf-product-img-box">
+            <span class="sf-discount-tag">50% OFF</span>
+            <button type="button" class="sf-wishlist-heart" aria-label="Add to wishlist">❤️</button>
+            <div class="sf-product-placeholder">
+              <span>🛍️ Product Item {{ i }}</span>
+            </div>
+          </div>
+
+          <div class="sf-product-details">
+            <div class="sf-rating-stars">★★★★★ <small>(84)</small></div>
+            <h3 class="sf-product-title">D2C Premium Conversion Best-Seller {{ i }}</h3>
+            
+            <div class="sf-price-row">
+              <span class="sf-sale-price">₹1,499</span>
+              <span class="sf-compare-price">₹2,999</span>
+            </div>
+
+            <div class="sf-card-badge-row">
+              <span class="sf-mini-badge">✔ COD Available</span>
+              <span class="sf-mini-badge">⚡ Free Delivery</span>
+            </div>
+
+            <button type="button" class="sf-btn sf-btn-primary sf-btn-full sf-quick-add-btn" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">
+              + Quick Add To Cart
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+  .sf-product-card {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #f3f4f6;
+  }
+  .sf-product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+  }
+  .sf-product-img-box {
+    height: 220px;
+    background: #f9fafb;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sf-discount-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+  .sf-wishlist-heart {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #ffffff;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .sf-product-details {
+    padding: 20px;
+  }
+  .sf-rating-stars {
+    color: #f59e0b;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+  }
+  .sf-product-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    color: #111827;
+  }
+  .sf-price-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .sf-sale-price {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #111827;
+  }
+  .sf-compare-price {
+    font-size: 0.9rem;
+    text-decoration: line-through;
+    color: #9ca3af;
+  }
+  .sf-card-badge-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .sf-mini-badge {
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .sf-quick-add-btn {
+    padding: 10px;
+    font-size: 0.88rem;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Trending Products Grid",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Section Heading", "default": "Most Loved Products This Season" },
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#f9fafb" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#111827" }
+  ]
+}
+{% endschema %}
