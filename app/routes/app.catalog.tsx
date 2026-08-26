@@ -51,13 +51,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const themesData = await themesResponse.json();
     const activeTheme = themesData?.data?.themes?.nodes?.[0];
 
-    const previewData = TEMPLATE_PREVIEWS[item.id];
-    const fullHtmlBody = previewData?.htmlPreview || `<div class="sf-injected-page">
-      <h1>${item.name}</h1>
-      <p>${item.description}</p>
-    </div>`;
+    // 2. Create OS 2.0 Theme JSON Asset (templates/page.sf-item.json) referencing Liquid Block
+    const activeThemeId = activeTheme?.id?.replace("gid://shopify/Theme/", "");
+    const templateSuffix = `sf-${item.slug.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+    const apiKey = "8e09eac89e33d5062083fa28d6e154f3";
 
-    // 2. Create Shopify Storefront Page via GraphQL Admin API
+    if (activeThemeId && admin.rest) {
+      try {
+        const asset = new admin.rest.resources.Asset({ session });
+        asset.theme_id = activeThemeId;
+        asset.key = `templates/page.${templateSuffix}.json`;
+        asset.value = JSON.stringify({
+          name: `Shop Forge - ${item.name}`,
+          sections: {
+            main: {
+              type: "apps",
+              blocks: {
+                shop_forge_liquid_section: {
+                  type: `shopify://apps/shop-forge/blocks/${item.block_handle}/${apiKey}`,
+                  settings: {}
+                }
+              },
+              block_order: ["shop_forge_liquid_section"]
+            }
+          },
+          order: ["main"]
+        });
+        await asset.save({ update: true });
+      } catch (assetErr) {
+        console.warn("Asset JSON template creation notice:", assetErr);
+      }
+    }
+
+    // 3. Create Shopify Storefront Page with template_suffix pointing to Liquid Block Template
     const pageResponse = await admin.graphql(
       `#graphql
       mutation createPage($page: PageCreateInput!) {
@@ -66,6 +92,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             id
             title
             handle
+            templateSuffix
           }
           userErrors {
             field
@@ -77,8 +104,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         variables: {
           page: {
             title: `Shop Forge - ${item.name}`,
-            handle: `sf-${item.slug}`,
-            body: fullHtmlBody,
+            handle: templateSuffix,
+            templateSuffix: templateSuffix,
+            body: `<div class="sf-liquid-page-wrapper">
+              <!-- Rendered via Shopify Theme Extension Liquid Block: ${item.block_handle}.liquid -->
+            </div>`,
           },
         },
       }
