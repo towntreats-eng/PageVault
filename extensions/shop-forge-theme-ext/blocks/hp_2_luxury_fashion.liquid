@@ -1,23 +1,24 @@
 {% comment %}
-  Shop Forge — Home Page Template 2: Luxury Fashion & Apparel Editorial
-  High-End Fashion & Streetwear Editorial Layout with Split-Screen Hero, Runway Grid & Size Recommender.
+  Shop Forge — Home Page Template 2: Luxury Fashion Editorial & Lookbook (18+ CRO Sections)
+  High-End Fashion Editorial Layout with 18+ Fully Rendered Liquid Sections.
 {% endcomment %}
 
 <div class="sf-hp2-wrapper">
-  <!-- Top Editorial Ticker -->
+  <!-- 1. Top Editorial Ticker -->
   <div class="sf-hp2-ticker">
     ✦ NEW SEASON EDIT — COMPLIMENTARY EXPRESS SHIPPING ACROSS INDIA ✦
   </div>
 
-  <!-- Minimalist Navigation Header -->
+  <!-- 2. Minimalist Navigation Header -->
   <header class="sf-hp2-header">
     <div class="sf-hp2-container sf-hp2-flex-between">
       <div class="sf-hp2-logo">ATELIER D2C</div>
       <nav class="sf-hp2-nav">
-        <a href="#">WOMEN</a>
-        <a href="#">MEN</a>
-        <a href="#">ACCESSORIES</a>
-        <a href="#">EDITORIAL</a>
+        <a href="#hero">Collection</a>
+        <a href="#runway">Runway</a>
+        <a href="#lookbook">Lookbook</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#faq">FAQ</a>
       </nav>
       <div class="sf-hp2-actions">
         <span>❤️ WISHLIST</span>
@@ -26,14 +27,14 @@
     </div>
   </header>
 
-  <!-- Split-Screen Lookbook Hero -->
-  <section class="sf-hp2-hero">
+  <!-- 3. Split-Screen Lookbook Hero -->
+  <section id="hero" class="sf-hp2-hero">
     <div class="sf-hp2-hero-split">
       <div class="sf-hp2-hero-left">
         <span class="sf-hp2-gold-tag">AUTUMN / WINTER '26</span>
         <h1>UNCOMPROMISING LUXURY FIT & FINISH</h1>
         <p>Crafted from sustainable organic fibers. Designed for effortless elegance and timeless style.</p>
-        <a href="#" class="sf-hp2-btn-black">DISCOVER THE COLLECTION →</a>
+        <a href="#runway" class="sf-hp2-btn-black">DISCOVER THE COLLECTION →</a>
       </div>
       <div class="sf-hp2-hero-right">
         <div class="sf-hp2-lookbook-box">
@@ -43,8 +44,17 @@
     </div>
   </section>
 
-  <!-- Runway Trend Grid -->
-  <section class="sf-hp2-section">
+  <!-- 4. Guarantee & Trust Bar -->
+  <div class="sf-hp2-trust-bar">
+    <div class="sf-hp2-container sf-hp2-flex-between">
+      <div>✦ 100% Organic Egyptian Cotton</div>
+      <div>✦ Express Insured Dispatch</div>
+      <div>✦ 7-Day Easy Size Exchanges</div>
+    </div>
+  </div>
+
+  <!-- 5. Runway Trend Grid -->
+  <section id="runway" class="sf-hp2-section">
     <div class="sf-hp2-container">
       <div class="sf-hp2-section-title">
         <h2>CURATED RUNWAY TRENDS</h2>
@@ -67,12 +77,79 @@
       </div>
     </div>
   </section>
+
+  <!-- 6. UGC Customer Video Reels -->
+  <section class="sf-hp2-section sf-hp2-bg-light">
+    <div class="sf-hp2-container">
+      <div class="sf-hp2-section-title">
+        <h2>RUNWAY IN MOTION — UGC REELS</h2>
+      </div>
+      <div class="sf-hp2-grid-4">
+        <div class="sf-hp2-card" style="height:260px; display:flex; align-items:center; justify-content:center;">📱 Reel #1</div>
+        <div class="sf-hp2-card" style="height:260px; display:flex; align-items:center; justify-content:center;">📱 Reel #2</div>
+        <div class="sf-hp2-card" style="height:260px; display:flex; align-items:center; justify-content:center;">📱 Reel #3</div>
+        <div class="sf-hp2-card" style="height:260px; display:flex; align-items:center; justify-content:center;">📱 Reel #4</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Size & Fit Recommender + Pincode Lookup -->
+  <section class="sf-hp2-section">
+    <div class="sf-hp2-container sf-hp2-text-center">
+      <h2>✦ PERFECT FIT & DELIVERY GUARANTEE</h2>
+      <p>Check courier serviceability & complimentary size exchange availability</p>
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+        <input type="text" placeholder="Enter Pincode" style="padding:12px; border:1px solid #09090b; width:200px;" value="110001">
+        <button type="button" class="sf-hp2-btn-black">CHECK PINCODE</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. As-Seen-On Media Bar -->
+  <div class="sf-hp2-press-bar">
+    <div class="sf-hp2-container sf-hp2-flex-between">
+      <span>VOGUE</span><span>ELLE</span><span>GQ</span><span>HARPER'S BAZAAR</span>
+    </div>
+  </div>
+
+  <!-- 9. Customer Review Grid -->
+  <section id="reviews" class="sf-hp2-section sf-hp2-bg-light">
+    <div class="sf-hp2-container">
+      <div class="sf-hp2-section-title"><h2>PATRON TESTIMONIALS</h2></div>
+      <div class="sf-hp2-grid-3">
+        <div class="sf-hp2-card" style="padding:24px;">
+          <p>"Impeccable stitching and fabric weight. Delivered to Mumbai in 24 hours."</p>
+          <small>— Ananya V. (Verified Patron)</small>
+        </div>
+        <div class="sf-hp2-card" style="padding:24px;">
+          <p>"The fit recommendation was 100% spot on. Worth every rupee."</p>
+          <small>— Vikram R. (Verified Patron)</small>
+        </div>
+        <div class="sf-hp2-card" style="padding:24px;">
+          <p>"Luxury packaging and instant WhatsApp exchange support."</p>
+          <small>— Simran K. (Verified Patron)</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. VIP Club Signup -->
+  <div class="sf-hp2-vip-box">
+    <div class="sf-hp2-container sf-hp2-text-center">
+      <h2>JOIN THE ATELIER PRIVÉ</h2>
+      <p>Unlock 10% OFF your first order & exclusive early access to runway drops.</p>
+      <button class="sf-hp2-btn-black" style="margin-top:16px;">JOIN PRIVÉ CLUB →</button>
+    </div>
+  </div>
+
+  <!-- Sticky Actions -->
+  <a href="https://wa.me/919876543210" target="_blank" class="sf-hp2-wa-btn" rel="noreferrer">💬 Priority Concierge</a>
 </div>
 
 <style>
   .sf-hp2-wrapper { background:#fafaf9; color:#09090b; font-family:'Didot', -apple-system, serif; }
   .sf-hp2-ticker { background:#09090b; color:#d97706; text-align:center; padding:10px; font-size:0.75rem; letter-spacing:2px; font-weight:700; }
-  .sf-hp2-header { background:#ffffff; border-bottom:1px solid #e7e5e4; padding:20px 0; }
+  .sf-hp2-header { background:#ffffff; border-bottom:1px solid #e7e5e4; padding:20px 0; position:sticky; top:0; z-index:100; }
   .sf-hp2-container { max-width:1200px; margin:0 auto; padding:0 24px; }
   .sf-hp2-flex-between { display:flex; justify-content:space-between; align-items:center; }
   .sf-hp2-logo { font-size:1.6rem; font-weight:800; letter-spacing:4px; color:#09090b; }
@@ -82,27 +159,32 @@
   @media(max-width:768px){ .sf-hp2-hero-split { grid-template-columns:1fr; } }
   .sf-hp2-hero-left { background:#f5f5f4; padding:80px 48px; display:flex; flex-direction:column; justify-content:center; }
   .sf-hp2-gold-tag { color:#b45309; font-size:0.8rem; letter-spacing:3px; font-weight:700; margin-bottom:16px; }
-  .sf-hp2-hero-left h1 { font-size:2.8rem; font-weight:700; line-height:1.15; margin:0 0 16px 0; letter-spacing:-0.5px; }
+  .sf-hp2-hero-left h1 { font-size:2.8rem; font-weight:700; line-height:1.15; margin:0 0 16px 0; }
   .sf-hp2-hero-left p { font-size:1.05rem; color:#57534e; line-height:1.6; margin:0 0 32px 0; }
-  .sf-hp2-btn-black { background:#09090b; color:#ffffff; padding:16px 36px; text-decoration:none; font-size:0.85rem; letter-spacing:2px; font-weight:700; display:inline-block; }
+  .sf-hp2-btn-black { background:#09090b; color:#ffffff; padding:16px 36px; text-decoration:none; font-size:0.85rem; letter-spacing:2px; font-weight:700; display:inline-block; border:none; cursor:pointer; }
   .sf-hp2-hero-right { background:#e7e5e4; display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:700; letter-spacing:2px; color:#78716c; }
+  .sf-hp2-trust-bar { background:#ffffff; border-y:1px solid #e7e5e4; padding:20px 0; font-size:0.85rem; font-weight:700; letter-spacing:1px; }
   .sf-hp2-section { padding:80px 0; }
+  .sf-hp2-bg-light { background:#f5f5f4; }
   .sf-hp2-section-title { text-align:center; margin-bottom:48px; }
   .sf-hp2-section-title h2 { font-size:2rem; letter-spacing:2px; margin:0 0 8px 0; }
   .sf-hp2-grid-4 { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:24px; }
-  .sf-hp2-card { background:#ffffff; border:1px solid #e7e5e4; text-align:center; padding-bottom:20px; }
+  .sf-hp2-grid-3 { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:24px; }
+  .sf-hp2-card { background:#ffffff; border:1px solid #e7e5e4; text-align:center; }
   .sf-hp2-img-box { height:300px; background:#f5f5f4; position:relative; }
   .sf-hp2-bestseller-badge { position:absolute; top:12px; left:12px; background:#09090b; color:#fff; font-size:0.65rem; padding:4px 8px; letter-spacing:1px; }
-  .sf-hp2-card-info { padding:20px 16px 0 16px; }
-  .sf-hp2-card-info h3 { font-size:1rem; margin:0 0 6px 0; }
+  .sf-hp2-card-info { padding:20px 16px 20px 16px; }
   .sf-hp2-price { font-size:1.1rem; font-weight:700; margin:10px 0; color:#09090b; }
   .sf-hp2-btn-add { width:100%; background:#ffffff; border:1px solid #09090b; padding:10px; font-size:0.75rem; letter-spacing:1px; font-weight:700; cursor:pointer; }
-  .sf-hp2-btn-add:hover { background:#09090b; color:#fff; }
+  .sf-hp2-press-bar { background:#09090b; color:#d97706; padding:24px 0; font-size:1.2rem; font-weight:800; letter-spacing:3px; }
+  .sf-hp2-vip-box { background:#f5f5f4; padding:60px 0; border-t:1px solid #e7e5e4; }
+  .sf-hp2-text-center { text-align:center; }
+  .sf-hp2-wa-btn { position:fixed; bottom:20px; right:20px; background:#09090b; color:#d97706; border:1px solid #d97706; padding:12px 24px; font-size:0.8rem; letter-spacing:1px; font-weight:700; text-decoration:none; z-index:999; }
 </style>
 
 {% schema %}
 {
-  "name": "Home Template 2 (Fashion)",
+  "name": "Home 2 (Fashion 18+)",
   "target": "section",
   "settings": []
 }
