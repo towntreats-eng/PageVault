@@ -51,6 +51,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const themesData = await themesResponse.json();
     const activeTheme = themesData?.data?.themes?.nodes?.[0];
 
+    const previewData = TEMPLATE_PREVIEWS[item.id];
+    const fullHtmlBody = previewData?.htmlPreview || `<div class="sf-injected-page">
+      <h1>${item.name}</h1>
+      <p>${item.description}</p>
+    </div>`;
+
     // 2. Create Shopify Storefront Page via GraphQL Admin API
     const pageResponse = await admin.graphql(
       `#graphql
@@ -72,11 +78,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           page: {
             title: `Shop Forge - ${item.name}`,
             handle: `sf-${item.slug}`,
-            body: `<div class="sf-injected-page">
-              <div class="sf-banner">🚀 Render Verified CRO Page Injected by Shop Forge</div>
-              <h1>${item.name}</h1>
-              <p>${item.description}</p>
-            </div>`,
+            body: fullHtmlBody,
           },
         },
       }
