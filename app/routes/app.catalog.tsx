@@ -141,6 +141,20 @@ export default function ShopForgeCatalog() {
   const isInjecting = fetcher.state !== "idle";
   const injectionResult = fetcher.data;
 
+  const previewData = selectedPreviewItem ? (TEMPLATE_PREVIEWS[selectedPreviewItem.id] || {
+    id: selectedPreviewItem.id,
+    name: selectedPreviewItem.name,
+    htmlPreview: `<!DOCTYPE html><html><body style="font-family:sans-serif; padding:40px; text-align:center;"><h2>${selectedPreviewItem.name}</h2><p>${selectedPreviewItem.description}</p><div style="background:#2563eb; color:#fff; padding:16px 32px; border-radius:30px; display:inline-block; font-weight:bold; margin-top:20px;">Render Verified CRO Section</div></body></html>`,
+    liquidCode: `{% comment %} Shop Forge — ${selectedPreviewItem.name} {% endcomment %}\n{% section '${selectedPreviewItem.block_handle}' %}`,
+    jsonSchema: `{\n  "name": "${selectedPreviewItem.name}",\n  "sections": {\n    "main": { "type": "${selectedPreviewItem.block_handle}" }\n  }\n}`
+  }) : null;
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
   return (
     <Page title="Shop Forge — Page & Section Library (50 Designs)">
       <TitleBar title="Catalog (50 Items) | Shop Forge" />
