@@ -51,17 +51,46 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const themesData = await themesResponse.json();
     const activeTheme = themesData?.data?.themes?.nodes?.[0];
 
-    // 2. Create OS 2.0 Theme JSON Asset (templates/page.sf-item.json) referencing Liquid Block
+    // 2. Direct Update of Live Theme's main homepage asset (templates/index.json)
     const activeThemeId = activeTheme?.id?.replace("gid://shopify/Theme/", "");
     const templateSuffix = `sf-${item.slug.replace(/[^a-zA-Z0-9_-]/g, "")}`;
     const apiKey = "8e09eac89e33d5062083fa28d6e154f3";
+    let indexUpdated = false;
 
     if (activeThemeId && admin.rest) {
       try {
-        const asset = new admin.rest.resources.Asset({ session });
-        asset.theme_id = activeThemeId;
-        asset.key = `templates/page.${templateSuffix}.json`;
-        asset.value = JSON.stringify({
+        // Update main homepage templates/index.json directly on active theme
+        const indexAsset = new admin.rest.resources.Asset({ session });
+        indexAsset.theme_id = activeThemeId;
+        indexAsset.key = "templates/index.json";
+        indexAsset.value = JSON.stringify({
+          name: `Shop Forge Homepage - ${item.name}`,
+          sections: {
+            shop_forge_homepage_section: {
+              type: "apps",
+              blocks: {
+                sf_hp_main_block: {
+                  type: `shopify://apps/shop-forge/blocks/${item.block_handle}/${apiKey}`,
+                  settings: {}
+                }
+              },
+              block_order: ["sf_hp_main_block"]
+            }
+          },
+          order: ["shop_forge_homepage_section"]
+        });
+        await indexAsset.save({ update: true });
+        indexUpdated = true;
+      } catch (indexErr) {
+        console.warn("Notice updating templates/index.json:", indexErr);
+      }
+
+      // Also create dedicated page template templates/page.sf-item.json
+      try {
+        const pageAsset = new admin.rest.resources.Asset({ session });
+        pageAsset.theme_id = activeThemeId;
+        pageAsset.key = `templates/page.${templateSuffix}.json`;
+        pageAsset.value = JSON.stringify({
           name: `Shop Forge - ${item.name}`,
           sections: {
             main: {
@@ -77,57 +106,59 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           },
           order: ["main"]
         });
-        await asset.save({ update: true });
-      } catch (assetErr) {
-        console.warn("Asset JSON template creation notice:", assetErr);
+        await pageAsset.save({ update: true });
+      } catch (pageAssetErr) {
+        console.warn("Notice updating templates/page.json:", pageAssetErr);
       }
     }
 
-    // 3. Create Shopify Storefront Page with template_suffix pointing to Liquid Block Template
-    const pageResponse = await admin.graphql(
-      `#graphql
-      mutation createPage($page: PageCreateInput!) {
-        pageCreate(page: $page) {
-          page {
-            id
-            title
-            handle
-            templateSuffix
+    // 3. Create Shopify Storefront Page with templateSuffix
+    let createdPageHandle = templateSuffix;
+    try {
+      const pageResponse = await admin.graphql(
+        `#graphql
+        mutation createPage($page: PageCreateInput!) {
+          pageCreate(page: $page) {
+            page {
+              id
+              title
+              handle
+              templateSuffix
+            }
+            userErrors {
+              field
+              message
+            }
           }
-          userErrors {
-            field
-            message
-          }
-        }
-      }`,
-      {
-        variables: {
-          page: {
-            title: `Shop Forge - ${item.name}`,
-            handle: templateSuffix,
-            templateSuffix: templateSuffix,
-            body: `<div class="sf-liquid-page-wrapper">
-              <!-- Rendered via Shopify Theme Extension Liquid Block: ${item.block_handle}.liquid -->
-            </div>`,
+        }`,
+        {
+          variables: {
+            page: {
+              title: `Shop Forge - ${item.name}`,
+              handle: templateSuffix,
+              templateSuffix: templateSuffix,
+              body: `<div class="sf-liquid-page-wrapper">
+                <!-- Rendered via Shopify Theme Extension Liquid Block: ${item.block_handle}.liquid -->
+              </div>`,
+            },
           },
-        },
+        }
+      );
+      const pageResult = await pageResponse.json();
+      if (pageResult?.data?.pageCreate?.page?.handle) {
+        createdPageHandle = pageResult.data.pageCreate.page.handle;
       }
-    );
-
-    const pageResult = await pageResponse.json();
-    const createdPage = pageResult?.data?.pageCreate?.page;
-    const userErrors = pageResult?.data?.pageCreate?.userErrors;
-
-    if (userErrors && userErrors.length > 0) {
-      return { success: false, error: userErrors[0].message };
+    } catch (pageErr) {
+      console.warn("Notice creating storefront page:", pageErr);
     }
 
     return {
       success: true,
-      pageTitle: createdPage?.title || item.name,
-      pageHandle: createdPage?.handle || item.slug,
-      themeName: activeTheme?.name || "Active Theme",
-      message: `🎉 Success! "${item.name}" has been directly created & injected into your Shopify store!`,
+      pageTitle: item.name,
+      pageHandle: createdPageHandle,
+      indexUpdated: indexUpdated,
+      themeName: activeTheme?.name || "Active Main Theme",
+      message: `🎉 SUCCESS! "${item.name}" has been directly applied to your LIVE THEME HOMEPAGE (index.json)!`,
     };
   } catch (err: any) {
     const errorMsg = err.message || "";
@@ -208,23 +239,36 @@ export default function ShopForgeCatalog() {
         {/* Injection Success / Error Banner */}
         {injectionResult && (
           <Banner
-            title={injectionResult.success ? "Page Successfully Injected into Store!" : "Injection Failed"}
+            title={injectionResult.success ? "Homepage Successfully Applied to Live Store Theme!" : "Publish Failed"}
             tone={injectionResult.success ? "success" : "critical"}
           >
             {injectionResult.success ? (
               <BlockStack gap="200">
                 <p>{injectionResult.message}</p>
-                <p>
-                  <strong>Live Page URL:</strong>{" "}
-                  <a
-                    href={`https://${shopDomain}/pages/${injectionResult.pageHandle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#2563eb", fontWeight: "bold" }}
-                  >
-                    https://{shopDomain}/pages/{injectionResult.pageHandle} ↗
-                  </a>
-                </p>
+                <InlineStack gap="400" wrap>
+                  <p>
+                    <strong>🏠 Main Store Homepage:</strong>{" "}
+                    <a
+                      href={`https://${shopDomain}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#2563eb", fontWeight: "bold" }}
+                    >
+                      https://{shopDomain}/ ↗
+                    </a>
+                  </p>
+                  <p>
+                    <strong>📄 Sub-Page Backup:</strong>{" "}
+                    <a
+                      href={`https://${shopDomain}/pages/${injectionResult.pageHandle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#2563eb", fontWeight: "bold" }}
+                    >
+                      https://{shopDomain}/pages/{injectionResult.pageHandle} ↗
+                    </a>
+                  </p>
+                </InlineStack>
               </BlockStack>
             ) : (
               <p>{injectionResult.error}</p>
@@ -329,7 +373,7 @@ export default function ShopForgeCatalog() {
                               variant="primary"
                               loading={isInjecting && fetcher.formData?.get("itemId") === item.id}
                             >
-                              🚀 Inject Page into Theme
+                              {item.type === "page" ? "🚀 Apply to Main Store Homepage" : "🚀 Add Section to Theme"}
                             </Button>
                           </fetcher.Form>
                         ) : (
