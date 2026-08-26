@@ -1,0 +1,69 @@
+{% comment %}
+  Shop Forge — Sticky Urgency Add-To-Cart (App Embed Block)
+  Appears in Shopify Theme Editor -> App Embeds tab.
+{% endcomment %}
+
+{% if template contains 'product' %}
+  <div class="sf-embed-sticky-atc">
+    <div class="sf-embed-atc-inner">
+      <div class="sf-embed-atc-info">
+        <strong>{{ product.title }}</strong>
+        <span class="sf-embed-atc-price">{{ product.price | money }}</span>
+        <span class="sf-embed-atc-stock">🔥 Only {{ product.variants.first.inventory_quantity | default: 4 }} left in stock!</span>
+      </div>
+      <form action="/cart/add" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+        <button type="submit" class="sf-embed-atc-btn">ADD TO CART</button>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .sf-embed-sticky-atc {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 24px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+      z-index: 99998;
+      box-sizing: border-box;
+    }
+    .sf-embed-atc-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sf-embed-atc-price {
+      font-weight: 800;
+      color: #10b981;
+      margin: 0 10px;
+    }
+    .sf-embed-atc-stock {
+      color: #ef4444;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .sf-embed-atc-btn {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Sticky Urgency Add-To-Cart",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

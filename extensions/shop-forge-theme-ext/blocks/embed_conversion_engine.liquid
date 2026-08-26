@@ -1,0 +1,55 @@
+{% comment %}
+  Shop Forge — Global Conversion Engine (App Embed Block)
+  Appears in Shopify Theme Editor -> App Embeds tab.
+  Enables Sticky ATC, Floating WhatsApp, Courier Pincode Checker & Conversion Analytics across the entire store.
+{% endcomment %}
+
+<script>
+  window.ShopForge = window.ShopForge || {
+    shop: "{{ shop.permanent_domain }}",
+    appUrl: "https://pagevault-production.up.railway.app",
+    pincodeEnabled: {{ block.settings.enable_pincode | json }},
+    whatsappEnabled: {{ block.settings.enable_whatsapp | json }},
+    stickyAtcEnabled: {{ block.settings.enable_sticky_atc | json }}
+  };
+</script>
+
+{% if block.settings.enable_whatsapp %}
+  <div class="sf-embed-wa">
+    <a href="https://wa.me/{{ block.settings.whatsapp_number }}?text=Hi!%20I%20have%20a%20question%20about%20my%20order." target="_blank" rel="noopener noreferrer" class="sf-embed-wa-btn">
+      💬 Chat on WhatsApp
+    </a>
+  </div>
+  <style>
+    .sf-embed-wa-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: #25d366;
+      color: #ffffff !important;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none !important;
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Shop Forge Conversion Engine",
+  "target": "body",
+  "settings": [
+    { "type": "checkbox", "id": "enable_pincode", "label": "Enable India Courier Pincode Checker", "default": true },
+    { "type": "checkbox", "id": "enable_whatsapp", "label": "Enable Sticky WhatsApp Support Chat", "default": true },
+    { "type": "text", "id": "whatsapp_number", "label": "WhatsApp Business Number", "default": "919876543210" },
+    { "type": "checkbox", "id": "enable_sticky_atc", "label": "Enable Sticky Add To Cart Bar", "default": true }
+  ]
+}
+{% endschema %}

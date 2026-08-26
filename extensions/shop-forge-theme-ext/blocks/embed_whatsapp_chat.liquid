@@ -1,0 +1,50 @@
+{% comment %}
+  Shop Forge — Floating WhatsApp Chat (App Embed Block)
+  Appears in Shopify Theme Editor -> App Embeds tab.
+{% endcomment %}
+
+<div class="sf-embed-wa-container">
+  <a href="https://wa.me/{{ block.settings.whatsapp_number }}?text={{ block.settings.message | url_encode }}" target="_blank" rel="noopener noreferrer" class="sf-embed-wa-floating">
+    <span class="sf-wa-dot"></span>
+    💬 {{ block.settings.label }}
+  </a>
+</div>
+
+<style>
+  .sf-embed-wa-floating {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #25d366;
+    color: #ffffff !important;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none !important;
+    box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sf-wa-dot {
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(255,255,255,0.8);
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Floating WhatsApp Chat",
+  "target": "body",
+  "settings": [
+    { "type": "text", "id": "whatsapp_number", "label": "WhatsApp Business Number", "default": "919876543210" },
+    { "type": "text", "id": "label", "label": "Button Label", "default": "Chat on WhatsApp" },
+    { "type": "text", "id": "message", "label": "Pre-filled Message", "default": "Hi! I need help with a product." }
+  ]
+}
+{% endschema %}
