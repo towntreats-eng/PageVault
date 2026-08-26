@@ -7,7 +7,7 @@ embedded = true
 
 [access_scopes]
 # Shopify GraphQL Admin API Access Scopes
-scopes = "read_products,write_products,read_orders,write_orders,read_themes,write_themes"
+scopes = "read_products,write_products,read_orders,write_orders,read_themes,write_themes,read_content,write_content,read_online_store_pages,write_online_store_pages"
 
 [auth]
 redirect_urls = [

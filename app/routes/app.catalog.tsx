@@ -98,7 +98,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       message: `🎉 Success! "${item.name}" has been directly created & injected into your Shopify store!`,
     };
   } catch (err: any) {
-    return { success: false, error: err.message || "Failed to inject page into theme" };
+    const errorMsg = err.message || "";
+    if (errorMsg.includes("Access denied") || errorMsg.includes("write_content")) {
+      return {
+        success: false,
+        error: "🔑 Permission Required: Shop Forge needs Online Store Page permissions to auto-create pages. Please re-open the app or re-authorize permissions from your Shopify Admin.",
+      };
+    }
+    return { success: false, error: errorMsg || "Failed to inject page into theme" };
   }
 };
 
