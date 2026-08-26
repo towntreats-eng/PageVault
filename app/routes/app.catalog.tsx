@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
   Text,
@@ -24,6 +24,84 @@ import { detectShopThemeArchitecture } from "../services/theme.server";
 import { TEMPLATE_PREVIEWS } from "../data/preview_code";
 import db from "../db.server";
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session, admin } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const itemId = formData.get("itemId") as string;
+
+  const item = CATALOG_50_ITEMS.find((i) => i.id === itemId);
+  if (!item) {
+    return { success: false, error: "Template not found" };
+  }
+
+  try {
+    // 1. Get Main Active Theme
+    const themesResponse = await admin.graphql(`
+      #graphql
+      query getThemes {
+        themes(first: 5, roles: MAIN) {
+          nodes {
+            id
+            name
+            role
+          }
+        }
+      }
+    `);
+    const themesData = await themesResponse.json();
+    const activeTheme = themesData?.data?.themes?.nodes?.[0];
+
+    // 2. Create Shopify Storefront Page via GraphQL Admin API
+    const pageResponse = await admin.graphql(
+      `#graphql
+      mutation createPage($page: PageCreateInput!) {
+        pageCreate(page: $page) {
+          page {
+            id
+            title
+            handle
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }`,
+      {
+        variables: {
+          page: {
+            title: `Shop Forge - ${item.name}`,
+            handle: `sf-${item.slug}`,
+            body: `<div class="sf-injected-page">
+              <div class="sf-banner">🚀 Render Verified CRO Page Injected by Shop Forge</div>
+              <h1>${item.name}</h1>
+              <p>${item.description}</p>
+            </div>`,
+          },
+        },
+      }
+    );
+
+    const pageResult = await pageResponse.json();
+    const createdPage = pageResult?.data?.pageCreate?.page;
+    const userErrors = pageResult?.data?.pageCreate?.userErrors;
+
+    if (userErrors && userErrors.length > 0) {
+      return { success: false, error: userErrors[0].message };
+    }
+
+    return {
+      success: true,
+      pageTitle: createdPage?.title || item.name,
+      pageHandle: createdPage?.handle || item.slug,
+      themeName: activeTheme?.name || "Active Theme",
+      message: `🎉 Success! "${item.name}" has been directly created & injected into your Shopify store!`,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to inject page into theme" };
+  }
+};
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   const shopDomain = session.shop;
@@ -46,6 +124,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function ShopForgeCatalog() {
   const { shopDomain, activeTier, themeStatus, items } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher<typeof action>();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   
   // Live Preview Modal States
@@ -59,19 +138,8 @@ export default function ShopForgeCatalog() {
     return true;
   });
 
-  const previewData = selectedPreviewItem ? (TEMPLATE_PREVIEWS[selectedPreviewItem.id] || {
-    id: selectedPreviewItem.id,
-    name: selectedPreviewItem.name,
-    htmlPreview: `<!DOCTYPE html><html><body style="font-family:sans-serif; padding:40px; text-align:center;"><h2>${selectedPreviewItem.name}</h2><p>${selectedPreviewItem.description}</p><div style="background:#2563eb; color:#fff; padding:16px 32px; border-radius:30px; display:inline-block; font-weight:bold; margin-top:20px;">Render Verified CRO Section</div></body></html>`,
-    liquidCode: `{% comment %} Shop Forge — ${selectedPreviewItem.name} {% endcomment %}\n{% section '${selectedPreviewItem.block_handle}' %}`,
-    jsonSchema: `{\n  "name": "${selectedPreviewItem.name}",\n  "sections": {\n    "main": { "type": "${selectedPreviewItem.block_handle}" }\n  }\n}`
-  }) : null;
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
+  const isInjecting = fetcher.state !== "idle";
+  const injectionResult = fetcher.data;
 
   return (
     <Page title="Shop Forge — Page & Section Library (50 Designs)">
@@ -84,26 +152,48 @@ export default function ShopForgeCatalog() {
           </p>
         </Banner>
 
-        {/* Merchant Guide: How to see and add pages to your Shopify Store */}
+        {/* Injection Success / Error Banner */}
+        {injectionResult && (
+          <Banner
+            title={injectionResult.success ? "Page Successfully Injected into Store!" : "Injection Failed"}
+            tone={injectionResult.success ? "success" : "critical"}
+          >
+            {injectionResult.success ? (
+              <BlockStack gap="200">
+                <p>{injectionResult.message}</p>
+                <p>
+                  <strong>Live Page URL:</strong>{" "}
+                  <a
+                    href={`https://${shopDomain}/pages/${injectionResult.pageHandle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#2563eb", fontWeight: "bold" }}
+                  >
+                    https://{shopDomain}/pages/{injectionResult.pageHandle} ↗
+                  </a>
+                </p>
+              </BlockStack>
+            ) : (
+              <p>{injectionResult.error}</p>
+            )}
+          </Banner>
+        )}
+
+        {/* Merchant Guide */}
         <Card background="bg-surface-secondary">
           <BlockStack gap="300">
             <Text as="h2" variant="headingMd">
-              💡 How to See & Add These Pages to Your Shopify Store:
+              💡 Direct 1-Click Storefront Injection & Preview:
             </Text>
             <InlineStack gap="400" wrap>
               <Box background="bg-surface" padding="300" borderRadius="200">
                 <Text as="p" variant="bodySm">
-                  <strong>1️⃣ Visual Preview:</strong> Click <strong>"👁️ Live Demo Preview"</strong> on any item to view live Desktop & Mobile designs.
+                  <strong>1️⃣ Full Live Preview:</strong> Click <strong>"👁️ Live Demo Preview"</strong> on any of the 10 Home Pages to view full Desktop & Mobile designs.
                 </Text>
               </Box>
               <Box background="bg-surface" padding="300" borderRadius="200">
                 <Text as="p" variant="bodySm">
-                  <strong>2️⃣ Open Theme Editor:</strong> Click <strong>"Add to Store Theme"</strong> to open your Shopify Theme Editor directly.
-                </Text>
-              </Box>
-              <Box background="bg-surface" padding="300" borderRadius="200">
-                <Text as="p" variant="bodySm">
-                  <strong>3️⃣ Insert App Section:</strong> Inside Theme Editor, click <strong>"Add Section"</strong> → Select <strong>"Apps"</strong> → Choose <strong>"Shop Forge Conversion Engine"</strong>!
+                  <strong>2️⃣ 1-Click Store Injection:</strong> Click <strong>"🚀 Inject Page into Store Theme"</strong> to automatically create & inject the page into your Shopify Store!
                 </Text>
               </Box>
             </InlineStack>
@@ -118,8 +208,8 @@ export default function ShopForgeCatalog() {
                 label="Component Type"
                 options={[
                   { label: `All Items (${items.length})`, value: "all" },
-                  { label: "Full Pages (26)", value: "page" },
-                  { label: "Theme Sections (24)", value: "section" },
+                  { label: "10 Full D2C Home Pages", value: "page" },
+                  { label: "Theme Sections (40)", value: "section" },
                 ]}
                 value={typeFilter}
                 onChange={(val) => setTypeFilter(val)}
@@ -175,17 +265,20 @@ export default function ShopForgeCatalog() {
                           onClick={() => setSelectedPreviewItem(item)}
                           variant="tertiary"
                         >
-                          👁️ Live Demo Preview
+                          👁️ Full Live Preview
                         </Button>
 
                         {isCompatible ? (
-                          <Button
-                            variant="primary"
-                            url={`https://${shopDomain}/admin/themes/current/editor?context=apps`}
-                            target="_blank"
-                          >
-                            Add to Store Theme
-                          </Button>
+                          <fetcher.Form method="post">
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <Button
+                              submit
+                              variant="primary"
+                              loading={isInjecting && fetcher.formData?.get("itemId") === item.id}
+                            >
+                              🚀 Inject Page into Theme
+                            </Button>
+                          </fetcher.Form>
                         ) : (
                           <Button disabled>Coming Soon for Theme</Button>
                         )}

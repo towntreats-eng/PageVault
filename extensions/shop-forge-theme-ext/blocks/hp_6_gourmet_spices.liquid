@@ -1,0 +1,65 @@
+{% comment %}
+  Shop Forge — Home Page Template 6: Gourmet Food, Organic Spices & Culinary Delights
+  Rich Saffron & Warm Olive Layout for Organic Food, Spices & Gourmet D2C Brands.
+{% endcomment %}
+
+<div class="sf-hp6-wrapper">
+  <div class="sf-hp6-ticker">🌿 100% ORGANIC FARM FRESH SPICES — COLD PRESSED & STONE GROUND ACROSS INDIA</div>
+  <header class="sf-hp6-header">
+    <div class="sf-hp6-container sf-hp6-flex-between">
+      <div class="sf-hp6-logo">SAFFRON <span>SPICES</span></div>
+      <nav class="sf-hp6-nav">
+        <a href="#hero">Origin</a><a href="#spices">Spices</a><a href="#pincode">Delivery</a><a href="#reviews">Reviews</a>
+      </nav>
+      <button type="button" class="sf-hp6-btn-saffron" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">🛒 MY CART (0)</button>
+    </div>
+  </header>
+  <section id="hero" class="sf-hp6-hero">
+    <div class="sf-hp6-container sf-hp6-hero-grid">
+      <div>
+        <span class="sf-hp6-tag">🌶️ FARM DIRECT PURITY</span>
+        <h1>AUTHENTIC SINGLE-ORIGIN SPICES FROM KERALA & KASHMIR</h1>
+        <p>Stone-ground in small batches to preserve essential aroma oils and natural color.</p>
+        <a href="#spices" class="sf-hp6-btn-hero">SHOP SPICE BOXES →</a>
+      </div>
+      <div class="sf-hp6-hero-box"><span>🌶️ Pure Stone-Ground Saffron & Cardamom</span></div>
+    </div>
+  </section>
+  <section id="spices" class="sf-hp6-section">
+    <div class="sf-hp6-container sf-hp6-title-center">
+      <h2>🌶️ ORGANIC GOURMET RANGE</h2>
+      <div class="sf-hp6-grid-4">
+        {% for i in (1..4) %}
+          <div class="sf-hp6-card">
+            <div style="font-size:40px;">🫙</div>
+            <h3>Organic Spice Pack {{ i }}</h3>
+            <p style="color:#d97706; font-weight:800;">₹499 <span style="text-decoration:line-through; color:#9ca3af; font-size:0.85rem;">₹799</span></p>
+            <button type="button" class="sf-hp6-btn-saffron" style="width:100%;" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">+ ADD TO CART</button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+<style>
+  .sf-hp6-wrapper { background:#fffbeb; color:#451a03; font-family:-apple-system,sans-serif; }
+  .sf-hp6-ticker { background:#b45309; color:#fff; text-align:center; padding:10px; font-size:0.8rem; font-weight:700; }
+  .sf-hp6-header { background:#fff; border-b:1px solid #fde68a; padding:16px 0; position:sticky; top:0; z-index:100; }
+  .sf-hp6-container { max-width:1140px; margin:0 auto; padding:0 24px; }
+  .sf-hp6-flex-between { display:flex; justify-content:space-between; align-items:center; }
+  .sf-hp6-logo { font-size:1.5rem; font-weight:900; color:#b45309; }
+  .sf-hp6-nav a { color:#78350f; text-decoration:none; margin:0 14px; font-weight:600; font-size:0.9rem; }
+  .sf-hp6-btn-saffron { background:#b45309; color:#fff; border:none; padding:10px 22px; border-radius:20px; font-weight:700; cursor:pointer; }
+  .sf-hp6-hero { padding:80px 0; background:#fef3c7; }
+  .sf-hp6-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  .sf-hp6-tag { background:#fff; color:#b45309; padding:6px 14px; border-radius:20px; font-weight:700; font-size:0.8rem; display:inline-block; margin-bottom:16px; }
+  .sf-hp6-hero h1 { font-size:2.5rem; font-weight:900; color:#78350f; margin:0 0 16px 0; }
+  .sf-hp6-hero p { font-size:1.1rem; color:#92400e; margin:0 0 28px 0; }
+  .sf-hp6-btn-hero { background:#b45309; color:#fff; padding:16px 32px; border-radius:30px; font-weight:800; text-decoration:none; display:inline-block; }
+  .sf-hp6-hero-box { height:320px; background:#fff; border-radius:24px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#78350f; border:1px solid #fde68a; }
+  .sf-hp6-section { padding:64px 0; }
+  .sf-hp6-title-center { text-align:center; }
+  .sf-hp6-grid-4 { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-top:32px; }
+  .sf-hp6-card { background:#fff; border:1px solid #fde68a; padding:24px; border-radius:20px; text-align:center; }
+</style>
+{% schema %} { "name": "Home 6 (Gourmet Food)", "target": "section", "settings": [] } {% endschema %}

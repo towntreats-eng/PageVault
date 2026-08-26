@@ -1,0 +1,63 @@
+{% comment %}
+  Shop Forge — Home Page Template 7: Electronics, Smart Gadgets & Audio Pro
+  Neon Cyan & Obsidian Layout for Tech, Audio & Electronics D2C Brands.
+{% endcomment %}
+
+<div class="sf-hp7-wrapper">
+  <div class="sf-hp7-ticker">⚡ ACTIVE NOISE CANCELLATION TECH — 1-YEAR GST WARRANTY INCLUDED</div>
+  <header class="sf-hp7-header">
+    <div class="sf-hp7-container sf-hp7-flex-between">
+      <div class="sf-hp7-logo">CYBER <span>AUDIO</span></div>
+      <nav class="sf-hp7-nav"><a href="#hero">Specs</a><a href="#products">Earbuds</a><a href="#reviews">Reviews</a></nav>
+      <button type="button" class="sf-hp7-btn-cyan" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">🛒 CART (1)</button>
+    </div>
+  </header>
+  <section id="hero" class="sf-hp7-hero">
+    <div class="sf-hp7-container sf-hp7-hero-grid">
+      <div>
+        <span class="sf-hp7-tag">🎧 40dB ANC TECH</span>
+        <h1>IMMERSIVE SPATIAL AUDIO ENGINEERED FOR GAMERS & AUDIOPHILES</h1>
+        <p>50-Hour battery life, ultra-low 35ms latency mode, and IPX7 water resistance.</p>
+        <a href="#products" class="sf-hp7-btn-hero">SHOP GAMING AUDIO →</a>
+      </div>
+      <div class="sf-hp7-hero-box"><span>🎧 Cyber ANC Wireless Earbuds</span></div>
+    </div>
+  </section>
+  <section id="products" class="sf-hp7-section">
+    <div class="sf-hp7-container sf-hp7-title-center">
+      <h2>🎧 HIGH-TECH AUDIO GEAR</h2>
+      <div class="sf-hp7-grid-4">
+        {% for i in (1..4) %}
+          <div class="sf-hp7-card">
+            <div style="font-size:40px;">🎧</div>
+            <h3>Pro ANC Earbuds V{{ i }}</h3>
+            <p style="color:#06b6d4; font-weight:800;">₹2,999 <span style="text-decoration:line-through; color:#64748b;">₹5,999</span></p>
+            <button type="button" class="sf-hp7-btn-cyan" style="width:100%;" onclick="document.querySelector('#sf-cart-drawer-overlay').classList.add('sf-active')">+ QUICK ADD</button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+<style>
+  .sf-hp7-wrapper { background:#0b1329; color:#f8fafc; font-family:-apple-system,sans-serif; }
+  .sf-hp7-ticker { background:#0891b2; color:#fff; text-align:center; padding:10px; font-size:0.8rem; font-weight:800; }
+  .sf-hp7-header { background:#0f172a; border-b:1px solid #1e293b; padding:16px 0; position:sticky; top:0; z-index:100; }
+  .sf-hp7-container { max-width:1140px; margin:0 auto; padding:0 24px; }
+  .sf-hp7-flex-between { display:flex; justify-content:space-between; align-items:center; }
+  .sf-hp7-logo { font-size:1.5rem; font-weight:900; color:#06b6d4; }
+  .sf-hp7-nav a { color:#94a3b8; text-decoration:none; margin:0 14px; font-weight:600; font-size:0.9rem; }
+  .sf-hp7-btn-cyan { background:#06b6d4; color:#000; border:none; padding:10px 22px; border-radius:20px; font-weight:800; cursor:pointer; }
+  .sf-hp7-hero { padding:80px 0; background:linear-gradient(135deg, #0b1329, #0f172a); }
+  .sf-hp7-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  .sf-hp7-tag { background:#1e293b; color:#06b6d4; padding:6px 14px; border-radius:20px; font-weight:800; font-size:0.8rem; display:inline-block; margin-bottom:16px; }
+  .sf-hp7-hero h1 { font-size:2.5rem; font-weight:900; margin:0 0 16px 0; }
+  .sf-hp7-hero p { font-size:1.1rem; color:#94a3b8; margin:0 0 28px 0; }
+  .sf-hp7-btn-hero { background:#06b6d4; color:#000; padding:16px 32px; border-radius:30px; font-weight:900; text-decoration:none; display:inline-block; }
+  .sf-hp7-hero-box { height:320px; background:#1e293b; border-radius:24px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#06b6d4; border:1px solid #334155; }
+  .sf-hp7-section { padding:64px 0; }
+  .sf-hp7-title-center { text-align:center; }
+  .sf-hp7-grid-4 { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-top:32px; }
+  .sf-hp7-card { background:#1e293b; border:1px solid #334155; padding:24px; border-radius:20px; text-align:center; }
+</style>
+{% schema %} { "name": "Home 7 (Tech & Audio)", "target": "section", "settings": [] } {% endschema %}
