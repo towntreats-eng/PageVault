@@ -1,0 +1,76 @@
+{% comment %}
+  Shop Forge — HP2 Section 4: Asymmetric Collection Grid
+{% endcomment %}
+
+<div class="sf-hp2-collections">
+  <div class="sf-hp2-grid">
+    <div class="sf-hp2-card sf-hp2-large">
+      <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80" alt="Resort Wear" />
+      <div class="sf-hp2-card-overlay">
+        <h3>Resort Wear</h3>
+        <a href="#">Explore Collection</a>
+      </div>
+    </div>
+    <div class="sf-hp2-card sf-hp2-small">
+      <img src="https://images.unsplash.com/photo-1591561954557-26941169b49e?w=400&q=80" alt="Accessories" />
+      <div class="sf-hp2-card-overlay">
+        <h3>Accessories</h3>
+        <a href="#">Shop Now</a>
+      </div>
+    </div>
+    <div class="sf-hp2-card sf-hp2-small">
+      <img src="https://images.unsplash.com/photo-1584324395345-21d374ce3585?w=400&q=80" alt="Bags" />
+      <div class="sf-hp2-card-overlay">
+        <h3>Bags</h3>
+        <a href="#">Shop Now</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .sf-hp2-collections { padding: 40px 24px; background: #fcfbf9; }
+  .sf-hp2-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 300px);
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .sf-hp2-large { grid-row: span 2; }
+  .sf-hp2-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+  }
+  .sf-hp2-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .sf-hp2-card:hover img { transform: scale(1.05); }
+  .sf-hp2-card-overlay {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    color: #fff;
+  }
+  .sf-hp2-card-overlay h3 { margin: 0 0 10px 0; font-family: 'Playfair Display', serif; font-size: 2rem; }
+  .sf-hp2-card-overlay a { color: #fff; text-decoration: underline; font-family: 'Helvetica Neue', Helvetica, sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+  
+  @media (max-width: 768px) {
+    .sf-hp2-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+    .sf-hp2-large { grid-row: auto; height: 400px; }
+    .sf-hp2-small { height: 300px; }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "HP2: Asymmetric Grid",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

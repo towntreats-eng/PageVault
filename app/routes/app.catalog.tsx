@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
@@ -9,20 +9,40 @@ import {
   BlockStack,
   InlineStack,
   Grid,
-  Select,
   Button,
   Box,
   Banner,
   Modal,
   Tabs,
   ButtonGroup,
+  Frame,
+  Navigation,
+  TopBar,
+  Icon,
+  Layout,
+  Divider,
 } from "@shopify/polaris";
+import {
+  HomeIcon,
+  ProductIcon,
+  PageIcon,
+  LayoutBlockIcon,
+  ViewIcon,
+} from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { CATALOG_50_ITEMS, CatalogItem50 } from "../models/catalog_50";
 import { detectShopThemeArchitecture } from "../services/theme.server";
 import { TEMPLATE_PREVIEWS } from "../data/preview_code";
 import db from "../db.server";
+import { getRegistryEntry } from "../services/registry.server";
+
+// Dynamic placeholders for the premium visual cards
+const getMockupImage = (itemId: string, type: string) => {
+  if (type === "page" && itemId.includes("hp")) return "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=800&h=500";
+  if (type === "page" && itemId.includes("pdp")) return "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800&h=500";
+  return "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&q=80&w=800&h=500";
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -35,7 +55,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    // 1. Get Main Active Theme
     const themesResponse = await admin.graphql(`
       #graphql
       query getThemes {
@@ -51,7 +70,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const themesData = await themesResponse.json();
     const activeTheme = themesData?.data?.themes?.nodes?.[0];
 
-    // 2. Direct Update of Live Theme's main homepage asset (templates/index.json)
     const activeThemeId = activeTheme?.id?.replace("gid://shopify/Theme/", "");
     const templateSuffix = `sf-${item.slug.replace(/[^a-zA-Z0-9_-]/g, "")}`;
     const apiKey = "8e09eac89e33d5062083fa28d6e154f3";
@@ -59,60 +77,64 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if (activeThemeId && admin.rest) {
       try {
-        // Update main homepage templates/index.json directly on active theme
-        const indexAsset = new admin.rest.resources.Asset({ session });
-        indexAsset.theme_id = activeThemeId;
-        indexAsset.key = "templates/index.json";
-        indexAsset.value = JSON.stringify({
-          name: `Shop Forge Homepage - ${item.name}`,
-          sections: {
-            shop_forge_homepage_section: {
-              type: "apps",
-              blocks: {
-                sf_hp_main_block: {
-                  type: `shopify://apps/shop-forge/blocks/${item.block_handle}/${apiKey}`,
-                  settings: {}
-                }
-              },
-              block_order: ["sf_hp_main_block"]
-            }
-          },
-          order: ["shop_forge_homepage_section"]
-        });
-        await indexAsset.save({ update: true });
-        indexUpdated = true;
-      } catch (indexErr) {
-        console.warn("Notice updating templates/index.json:", indexErr);
-      }
-
-      // Also create dedicated page template templates/page.sf-item.json
-      try {
-        const pageAsset = new admin.rest.resources.Asset({ session });
-        pageAsset.theme_id = activeThemeId;
-        pageAsset.key = `templates/page.${templateSuffix}.json`;
-        pageAsset.value = JSON.stringify({
+        const registryEntry = getRegistryEntry(item.id, item.type, item.block_handle);
+        
+        let templateJson: any = {
           name: `Shop Forge - ${item.name}`,
-          sections: {
-            main: {
+          sections: {},
+          order: []
+        };
+
+        if (registryEntry.blocks.length > 0) {
+          registryEntry.blocks.forEach((blockName, index) => {
+            const sectionId = `sf_${blockName}_${index}`;
+            templateJson.sections[sectionId] = {
+              type: `shopify://apps/shop-forge/blocks/${blockName}/${apiKey}`,
+              settings: {}
+            };
+            templateJson.order.push(sectionId);
+          });
+        } else {
+          templateJson.sections = {
+            shop_forge_section: {
               type: "apps",
               blocks: {
-                shop_forge_liquid_section: {
+                sf_main_block: {
                   type: `shopify://apps/shop-forge/blocks/${item.block_handle}/${apiKey}`,
                   settings: {}
                 }
               },
-              block_order: ["shop_forge_liquid_section"]
+              block_order: ["sf_main_block"]
             }
-          },
-          order: ["main"]
-        });
-        await pageAsset.save({ update: true });
-      } catch (pageAssetErr) {
-        console.warn("Notice updating templates/page.json:", pageAssetErr);
+          };
+          templateJson.order = ["shop_forge_section"];
+        }
+
+        if (registryEntry.targetTemplate === 'index') {
+          const indexAsset = new admin.rest.resources.Asset({ session });
+          indexAsset.theme_id = activeThemeId;
+          indexAsset.key = "templates/index.json";
+          indexAsset.value = JSON.stringify(templateJson);
+          await indexAsset.save({ update: true });
+          indexUpdated = true;
+        } else if (registryEntry.targetTemplate === 'product') {
+          const productAsset = new admin.rest.resources.Asset({ session });
+          productAsset.theme_id = activeThemeId;
+          productAsset.key = `templates/product.${templateSuffix}.json`;
+          productAsset.value = JSON.stringify(templateJson);
+          await productAsset.save({ update: true });
+        } else {
+          const pageAsset = new admin.rest.resources.Asset({ session });
+          pageAsset.theme_id = activeThemeId;
+          pageAsset.key = `templates/page.${templateSuffix}.json`;
+          pageAsset.value = JSON.stringify(templateJson);
+          await pageAsset.save({ update: true });
+        }
+      } catch (assetErr) {
+        console.warn("Notice updating templates via Asset API:", assetErr);
       }
     }
 
-    // 3. Create Shopify Storefront Page with templateSuffix
     let createdPageHandle = templateSuffix;
     try {
       const pageResponse = await admin.graphql(
@@ -138,7 +160,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               handle: templateSuffix,
               templateSuffix: templateSuffix,
               body: `<div class="sf-liquid-page-wrapper">
-                <!-- Rendered via Shopify Theme Extension Liquid Block: ${item.block_handle}.liquid -->
+                <!-- Rendered via Shopify Theme Extension -->
               </div>`,
             },
           },
@@ -158,17 +180,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       pageHandle: createdPageHandle,
       indexUpdated: indexUpdated,
       themeName: activeTheme?.name || "Active Main Theme",
-      message: `🎉 SUCCESS! "${item.name}" has been directly applied to your LIVE THEME HOMEPAGE (index.json)!`,
+      message: `🎉 SUCCESS! "${item.name}" has been directly applied to your LIVE THEME!`,
     };
   } catch (err: any) {
     const errorMsg = err.message || "";
     if (errorMsg.includes("Access denied") || errorMsg.includes("write_content")) {
       return {
         success: false,
-        error: "🔑 Permission Required: Shop Forge needs Online Store Page permissions to auto-create pages. Please re-open the app or re-authorize permissions from your Shopify Admin.",
+        error: "🔑 Permission Required: Shop Forge needs Online Store Page permissions.",
       };
     }
-    return { success: false, error: errorMsg || "Failed to inject page into theme" };
+    return { success: false, error: errorMsg || "Failed to inject template into theme" };
   }
 };
 
@@ -192,19 +214,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
-export default function ShopForgeCatalog() {
+export default function ShopForgeStudio() {
   const { shopDomain, activeTier, themeStatus, items } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   
-  // Live Preview Modal States
+  // Navigation State
+  const [activeNav, setActiveNav] = useState("all");
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  
+  // Studio Modal State
   const [selectedPreviewItem, setSelectedPreviewItem] = useState<CatalogItem50 | null>(null);
-  const [selectedTab, setSelectedTab] = useState<number>(0);
   const [deviceMode, setDeviceMode] = useState<"desktop" | "mobile">("desktop");
+  const [selectedTab, setSelectedTab] = useState<number>(0);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
 
   const filteredItems = items.filter((item) => {
-    if (typeFilter !== "all" && item.type !== typeFilter) return false;
+    if (activeNav === "all") return true;
+    if (activeNav === "homepages") return item.id.includes("cat_1") || item.id.includes("cat_2");
+    if (activeNav === "productpages") return item.id.includes("cat_11");
+    if (activeNav === "sections") return item.type === "section";
     return true;
   });
 
@@ -214,7 +242,7 @@ export default function ShopForgeCatalog() {
   const previewData = selectedPreviewItem ? (TEMPLATE_PREVIEWS[selectedPreviewItem.id] || {
     id: selectedPreviewItem.id,
     name: selectedPreviewItem.name,
-    htmlPreview: `<!DOCTYPE html><html><body style="font-family:sans-serif; padding:40px; text-align:center;"><h2>${selectedPreviewItem.name}</h2><p>${selectedPreviewItem.description}</p><div style="background:#2563eb; color:#fff; padding:16px 32px; border-radius:30px; display:inline-block; font-weight:bold; margin-top:20px;">Render Verified CRO Section</div></body></html>`,
+    htmlPreview: `<!DOCTYPE html><html><body style="font-family:sans-serif; padding:40px; text-align:center;"><h2>${selectedPreviewItem.name}</h2><p>${selectedPreviewItem.description}</p><div style="background:#000; color:#fff; padding:16px 32px; border-radius:4px; display:inline-block; font-weight:bold; margin-top:20px; text-transform:uppercase; letter-spacing:1px;">Premium Component Loaded</div></body></html>`,
     liquidCode: `{% comment %} Shop Forge — ${selectedPreviewItem.name} {% endcomment %}\n{% section '${selectedPreviewItem.block_handle}' %}`,
     jsonSchema: `{\n  "name": "${selectedPreviewItem.name}",\n  "sections": {\n    "main": { "type": "${selectedPreviewItem.block_handle}" }\n  }\n}`
   }) : null;
@@ -225,293 +253,257 @@ export default function ShopForgeCatalog() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const topBarMarkup = (
+    <TopBar
+      showNavigationToggle
+      onNavigationToggle={() => setIsNavOpen(!isNavOpen)}
+      userMenu={
+        <Badge tone="info">{themeStatus.activeThemeName} ({themeStatus.architecture.toUpperCase()})</Badge>
+      }
+    />
+  );
+
+  const navigationMarkup = (
+    <Navigation location="/">
+      <Navigation.Section
+        title="App Studio"
+        items={[
+          {
+            label: "All Templates",
+            icon: ViewIcon,
+            selected: activeNav === "all",
+            onClick: () => setActiveNav("all"),
+          },
+          {
+            label: "Home Pages",
+            icon: HomeIcon,
+            selected: activeNav === "homepages",
+            onClick: () => setActiveNav("homepages"),
+          },
+          {
+            label: "Product Pages",
+            icon: ProductIcon,
+            selected: activeNav === "productpages",
+            onClick: () => setActiveNav("productpages"),
+          },
+          {
+            label: "CRO Sections",
+            icon: LayoutBlockIcon,
+            selected: activeNav === "sections",
+            onClick: () => setActiveNav("sections"),
+          },
+        ]}
+      />
+    </Navigation>
+  );
+
   return (
-    <Page title="Shop Forge — Page & Section Library (50 Designs)">
-      <TitleBar title="Catalog (50 Items) | Shop Forge" />
-      <BlockStack gap="500">
-        <Banner title={`Active Store Theme: ${themeStatus.activeThemeName}`} tone="info">
-          <p>
-            Theme Architecture Detected: <strong>{themeStatus.architecture.toUpperCase()}</strong>.
-            Items incompatible with your theme architecture show as <em>Coming Soon</em> and will never install broken.
-          </p>
-        </Banner>
+    <Frame topBar={topBarMarkup} navigation={navigationMarkup} showMobileNavigation={isNavOpen} onNavigationDismiss={() => setIsNavOpen(false)}>
+      <TitleBar title="Studio | Shop Forge" />
+      
+      {/* Dynamic Styling injected to override Polaris constraints for a premium look */}
+      <style>{`
+        .sf-premium-card {
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          overflow: hidden;
+          border-radius: 16px;
+          border: 1px solid #e1e3e5;
+          background: #fff;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+        .sf-premium-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+          border-color: #000;
+        }
+        .sf-card-image {
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+          border-bottom: 1px solid #f1f2f4;
+        }
+        .sf-card-content {
+          padding: 20px;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .sf-studio-modal-content {
+          background: #f4f6f8;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+      `}</style>
 
-        {/* Injection Success / Error Banner */}
-        {injectionResult && (
-          <Banner
-            title={injectionResult.success ? "Homepage Successfully Applied to Live Store Theme!" : "Publish Failed"}
-            tone={injectionResult.success ? "success" : "critical"}
-          >
-            {injectionResult.success ? (
-              <BlockStack gap="200">
-                <p>{injectionResult.message}</p>
-                <InlineStack gap="400" wrap>
-                  <p>
-                    <strong>🏠 Main Store Homepage:</strong>{" "}
-                    <a
-                      href={`https://${shopDomain}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#2563eb", fontWeight: "bold" }}
-                    >
-                      https://{shopDomain}/ ↗
-                    </a>
-                  </p>
-                  <p>
-                    <strong>📄 Sub-Page Backup:</strong>{" "}
-                    <a
-                      href={`https://${shopDomain}/pages/${injectionResult.pageHandle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#2563eb", fontWeight: "bold" }}
-                    >
-                      https://{shopDomain}/pages/{injectionResult.pageHandle} ↗
-                    </a>
-                  </p>
-                </InlineStack>
-              </BlockStack>
-            ) : (
-              <p>{injectionResult.error}</p>
-            )}
-          </Banner>
-        )}
+      <Page fullWidth title="Template Studio">
+        <BlockStack gap="500">
+          
+          {injectionResult && (
+            <Banner
+              title={injectionResult.success ? "Successfully Applied to Live Theme!" : "Injection Failed"}
+              tone={injectionResult.success ? "success" : "critical"}
+            >
+              <p>{injectionResult.success ? injectionResult.message : injectionResult.error}</p>
+            </Banner>
+          )}
 
-        {/* Merchant Guide */}
-        <Card background="bg-surface-secondary">
-          <BlockStack gap="300">
-            <Text as="h2" variant="headingMd">
-              💡 Direct 1-Click Storefront Injection & Preview:
-            </Text>
-            <InlineStack gap="400" wrap>
-              <Box background="bg-surface" padding="300" borderRadius="200">
-                <Text as="p" variant="bodySm">
-                  <strong>1️⃣ Full Live Preview:</strong> Click <strong>"👁️ Live Demo Preview"</strong> on any of the 10 Home Pages to view full Desktop & Mobile designs.
-                </Text>
-              </Box>
-              <Box background="bg-surface" padding="300" borderRadius="200">
-                <Text as="p" variant="bodySm">
-                  <strong>2️⃣ 1-Click Store Injection:</strong> Click <strong>"🚀 Inject Page into Store Theme"</strong> to automatically create & inject the page into your Shopify Store!
-                </Text>
-              </Box>
-            </InlineStack>
-          </BlockStack>
-        </Card>
+          <Grid>
+            {filteredItems.map((item) => {
+              const isCompatible = item.theme_compat.includes(themeStatus.architecture as any);
+              const mockup = getMockupImage(item.id, item.type);
 
-        {/* Filters */}
-        <Card>
-          <InlineStack align="space-between" blockAlign="center">
-            <InlineStack gap="400">
-              <Select
-                label="Component Type"
-                options={[
-                  { label: `All Items (${items.length})`, value: "all" },
-                  { label: "10 Full D2C Home Pages", value: "page" },
-                  { label: "Theme Sections (40)", value: "section" },
-                ]}
-                value={typeFilter}
-                onChange={(val) => setTypeFilter(val)}
-              />
-            </InlineStack>
-            <Text as="span" variant="bodySm" tone="subdued">
-              Showing {filteredItems.length} of {items.length} render-verified items
-            </Text>
-          </InlineStack>
-        </Card>
+              return (
+                <Grid.Cell key={item.id} columnSpan={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 3 }}>
+                  <div className="sf-premium-card" onClick={() => setSelectedPreviewItem(item)}>
+                    <img src={mockup} alt={item.name} className="sf-card-image" />
+                    <div className="sf-card-content">
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Badge tone={item.type === "page" ? "attention" : "info"}>
+                            {item.type.toUpperCase()}
+                          </Badge>
+                          {!isCompatible && <Badge tone="critical">COMING SOON</Badge>}
+                        </InlineStack>
+                        <Text as="h3" variant="headingMd" fontWeight="bold">
+                          {item.name}
+                        </Text>
+                        <Text as="p" variant="bodySm" tone="subdued">
+                          {item.description}
+                        </Text>
+                        <InlineStack gap="100">
+                          {item.niche_tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} tone="new">{tag}</Badge>
+                          ))}
+                        </InlineStack>
+                      </BlockStack>
+                      <Box paddingBlockStart="300">
+                        <Button fullWidth variant="tertiary">Open in Studio Preview</Button>
+                      </Box>
+                    </div>
+                  </div>
+                </Grid.Cell>
+              );
+            })}
+          </Grid>
+        </BlockStack>
 
-        {/* Items Grid */}
-        <Grid>
-          {filteredItems.map((item) => {
-            const isCompatible = item.theme_compat.includes(themeStatus.architecture as any);
-
-            return (
-              <Grid.Cell key={item.id} columnSpan={{ xs: 12, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                <Card>
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="200">
-                        <Badge tone={item.type === "page" ? "attention" : "info"}>
-                          {item.type.toUpperCase()}
-                        </Badge>
-                        <Badge tone={item.min_tier === "free" ? "success" : "warning"}>
-                          {item.min_tier.toUpperCase()} TIER
-                        </Badge>
-                      </InlineStack>
-
-                      {!isCompatible && <Badge tone="critical">COMING SOON</Badge>}
-                    </InlineStack>
-
-                    <Text as="h3" variant="headingSm">
-                      {item.name}
-                    </Text>
-
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      {item.description}
-                    </Text>
-
-                    <InlineStack gap="200">
-                      {item.niche_tags.map((tag) => (
-                        <Badge key={tag} tone="subdued">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </InlineStack>
-
-                    <Box paddingWithBorder="200" borderRadius="200" background="bg-surface-secondary">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <Button
-                          onClick={() => setSelectedPreviewItem(item)}
-                          variant="tertiary"
-                        >
-                          👁️ Full Live Preview
-                        </Button>
-
-                        {isCompatible ? (
-                          <fetcher.Form method="post">
-                            <input type="hidden" name="itemId" value={item.id} />
-                            <Button
-                              submit
-                              variant="primary"
-                              loading={isInjecting && fetcher.formData?.get("itemId") === item.id}
-                            >
-                              {item.type === "page" ? "🚀 Apply to Main Store Homepage" : "🚀 Add Section to Theme"}
-                            </Button>
-                          </fetcher.Form>
-                        ) : (
-                          <Button disabled>Coming Soon for Theme</Button>
-                        )}
-                      </InlineStack>
-                    </Box>
-                  </BlockStack>
-                </Card>
-              </Grid.Cell>
-            );
-          })}
-        </Grid>
-
-        {/* Live Interactive Preview Modal */}
+        {/* Full-Screen Studio Modal */}
         {selectedPreviewItem && (
           <Modal
             open={!!selectedPreviewItem}
             onClose={() => setSelectedPreviewItem(null)}
-            title={`Live Demo Preview: ${selectedPreviewItem.name}`}
-            primaryAction={{
-              content: "Open Theme Editor",
-              url: `https://${shopDomain}/admin/themes/current/editor?context=apps`,
-              target: "_blank",
-            }}
-            secondaryActions={[
-              {
-                content: "Close Preview",
-                onAction: () => setSelectedPreviewItem(null),
-              },
-            ]}
-            size="large"
+            title={`Shop Forge Studio - ${selectedPreviewItem.name}`}
+            size="fullScreen"
           >
-            <Modal.Section>
-              <BlockStack gap="400">
+            <div className="sf-studio-modal-content">
+              {/* Studio Top Bar */}
+              <Box background="bg-surface" padding="300" borderBlockEnd="1px solid #e1e3e5">
                 <InlineStack align="space-between" blockAlign="center">
-                  <Tabs
-                    tabs={[
-                      { id: "visual", content: "🖥️ Visual Live Preview" },
-                      { id: "liquid", content: "📄 Liquid Code" },
-                      { id: "json", content: "⚙️ JSON Schema" },
-                    ]}
-                    selected={selectedTab}
-                    onSelect={(idx) => setSelectedTab(idx)}
-                  />
-
-                  {selectedTab === 0 && (
+                  <InlineStack gap="400" blockAlign="center">
+                    <Text as="h2" variant="headingLg" fontWeight="bold">
+                      {selectedPreviewItem.name}
+                    </Text>
+                    <Badge tone="success">Production Ready</Badge>
+                  </InlineStack>
+                  <InlineStack gap="400" blockAlign="center">
                     <ButtonGroup variant="segmented">
-                      <Button
-                        pressed={deviceMode === "desktop"}
-                        onClick={() => setDeviceMode("desktop")}
-                      >
-                        💻 Desktop
-                      </Button>
-                      <Button
-                        pressed={deviceMode === "mobile"}
-                        onClick={() => setDeviceMode("mobile")}
-                      >
-                        📱 Mobile
-                      </Button>
+                      <Button pressed={deviceMode === "desktop"} onClick={() => setDeviceMode("desktop")}>Desktop</Button>
+                      <Button pressed={deviceMode === "mobile"} onClick={() => setDeviceMode("mobile")}>Mobile</Button>
                     </ButtonGroup>
-                  )}
+                    
+                    <fetcher.Form method="post" onSubmit={() => setSelectedPreviewItem(null)}>
+                      <input type="hidden" name="itemId" value={selectedPreviewItem.id} />
+                      <Button
+                        submit
+                        variant="primary"
+                        loading={isInjecting && fetcher.formData?.get("itemId") === selectedPreviewItem.id}
+                      >
+                        {selectedPreviewItem.type === "page" ? "🚀 Inject Template to Theme" : "🚀 Add Section to Theme"}
+                      </Button>
+                    </fetcher.Form>
+                  </InlineStack>
                 </InlineStack>
+              </Box>
 
-                {selectedTab === 0 && previewData && (
-                  <Box
-                    padding="400"
-                    background="bg-surface-secondary"
-                    borderRadius="300"
-                  >
+              {/* Studio Canvas Area */}
+              <Layout>
+                <Layout.Section variant="oneThird">
+                  <Box background="bg-surface" padding="400" minHeight="calc(100vh - 120px)">
+                    <BlockStack gap="400">
+                      <Text as="h3" variant="headingMd">Template Details</Text>
+                      <Text as="p" tone="subdued">{selectedPreviewItem.description}</Text>
+                      <Divider />
+                      
+                      <Tabs
+                        tabs={[
+                          { id: "visual", content: "Overview" },
+                          { id: "liquid", content: "Liquid" },
+                          { id: "json", content: "Schema" },
+                        ]}
+                        selected={selectedTab}
+                        onSelect={(idx) => setSelectedTab(idx)}
+                      />
+
+                      {selectedTab === 1 && previewData && (
+                        <BlockStack gap="200">
+                          <Button onClick={() => handleCopy(previewData.liquidCode)} size="micro">
+                            {copiedCode ? "Copied!" : "Copy Liquid"}
+                          </Button>
+                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
+                            <pre style={{ fontSize: "11px", overflowX: "auto" }}>{previewData.liquidCode}</pre>
+                          </Box>
+                        </BlockStack>
+                      )}
+                      
+                      {selectedTab === 2 && previewData && (
+                        <BlockStack gap="200">
+                          <Button onClick={() => handleCopy(previewData.jsonSchema)} size="micro">
+                            {copiedCode ? "Copied!" : "Copy Schema"}
+                          </Button>
+                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
+                            <pre style={{ fontSize: "11px", overflowX: "auto" }}>{previewData.jsonSchema}</pre>
+                          </Box>
+                        </BlockStack>
+                      )}
+                    </BlockStack>
+                  </Box>
+                </Layout.Section>
+                
+                <Layout.Section>
+                  <Box padding="600" display="flex" justifyContent="center">
                     <div
                       style={{
-                        margin: "0 auto",
-                        maxWidth: deviceMode === "mobile" ? "375px" : "100%",
-                        height: "520px",
-                        border: deviceMode === "mobile" ? "12px solid #1f2937" : "1px solid #d1d5db",
-                        borderRadius: deviceMode === "mobile" ? "36px" : "12px",
+                        width: "100%",
+                        maxWidth: deviceMode === "mobile" ? "375px" : "1200px",
+                        height: "calc(100vh - 200px)",
+                        border: deviceMode === "mobile" ? "16px solid #111" : "1px solid #d1d5db",
+                        borderRadius: deviceMode === "mobile" ? "40px" : "12px",
                         overflow: "hidden",
-                        boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-                        transition: "all 0.3s ease",
+                        boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+                        transition: "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)",
+                        backgroundColor: "#fff"
                       }}
                     >
-                      <iframe
-                        title="Live Demo Preview Frame"
-                        srcDoc={previewData.htmlPreview}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          border: "none",
-                        }}
-                      />
+                      {previewData && (
+                        <iframe
+                          title="Live Studio Canvas"
+                          srcDoc={previewData.htmlPreview}
+                          style={{ width: "100%", height: "100%", border: "none" }}
+                        />
+                      )}
                     </div>
                   </Box>
-                )}
-
-                {selectedTab === 1 && previewData && (
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between">
-                      <Text as="p" variant="bodySm">Copy Liquid code to place manually inside your Shopify Theme:</Text>
-                      <Button
-                        onClick={() => handleCopy(previewData.liquidCode)}
-                        variant="primary"
-                      >
-                        {copiedCode ? "✔ Copied!" : "📋 Copy Liquid Code"}
-                      </Button>
-                    </InlineStack>
-                    <Box padding="400" background="bg-surface-tertiary" borderRadius="200">
-                      <pre style={{ margin: 0, fontFamily: "monospace", fontSize: "12px", whiteSpace: "pre-wrap" }}>
-                        {previewData.liquidCode}
-                      </pre>
-                    </Box>
-                  </BlockStack>
-                )}
-
-                {selectedTab === 2 && previewData && (
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between">
-                      <Text as="p" variant="bodySm">JSON Schema for Shopify OS 2.0 section templates:</Text>
-                      <Button
-                        onClick={() => handleCopy(previewData.jsonSchema)}
-                        variant="primary"
-                      >
-                        {copiedCode ? "✔ Copied!" : "📋 Copy JSON Schema"}
-                      </Button>
-                    </InlineStack>
-                    <Box padding="400" background="bg-surface-tertiary" borderRadius="200">
-                      <pre style={{ margin: 0, fontFamily: "monospace", fontSize: "12px", whiteSpace: "pre-wrap" }}>
-                        {previewData.jsonSchema}
-                      </pre>
-                    </Box>
-                  </BlockStack>
-                )}
-              </BlockStack>
-            </Modal.Section>
+                </Layout.Section>
+              </Layout>
+            </div>
           </Modal>
         )}
-      </BlockStack>
-    </Page>
+      </Page>
+    </Frame>
   );
 }
-
