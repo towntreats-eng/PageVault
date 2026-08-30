@@ -71,14 +71,14 @@ CREATE TABLE "SeoSetting" (
 -- CreateTable
 CREATE TABLE "ImageOptLog" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "shop_domain" TEXT NOT NULL,
     "product_id" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,
     "original_size" INTEGER NOT NULL,
     "compressed_size" INTEGER NOT NULL,
     "alt_text" TEXT,
     "status" TEXT NOT NULL DEFAULT 'compressed',
-    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "shop_domain" TEXT NOT NULL
 );
 
 -- CreateTable
@@ -242,17 +242,3 @@ CREATE UNIQUE INDEX "GscConnection_shop_domain_key" ON "GscConnection"("shop_dom
 CREATE UNIQUE INDEX "Keyword_term_market_key" ON "Keyword"("term", "market");
 CREATE UNIQUE INDEX "KeywordAssignment_resource_gid_market_role_key" ON "KeywordAssignment"("resource_gid", "market", "role");
 CREATE UNIQUE INDEX "AiBudget_shop_domain_key" ON "AiBudget"("shop_domain");
-
-
--- CreateIndex
-CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
-CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
-CREATE UNIQUE INDEX "SeoSetting_shop_domain_key" ON "SeoSetting"("shop_domain");
-CREATE UNIQUE INDEX "PageRecord_shop_domain_url_key" ON "PageRecord"("shop_domain", "url");
-CREATE UNIQUE INDEX "GscConnection_shop_domain_key" ON "GscConnection"("shop_domain");
-CREATE UNIQUE INDEX "Keyword_term_market_key" ON "Keyword"("term", "market");
-CREATE UNIQUE INDEX "KeywordAssignment_resource_gid_market_role_key" ON "KeywordAssignment"("resource_gid", "market", "role");
-CREATE UNIQUE INDEX "AiBudget_shop_domain_key" ON "AiBudget"("shop_domain");
-
-
-
