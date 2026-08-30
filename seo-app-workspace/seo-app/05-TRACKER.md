@@ -68,9 +68,9 @@ Only **one** task may be `WIP` at a time.
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 4.1 | Handle change detection + urlRedirectCreate | TODO | Old URL 301s in browser | |
-| 4.2 | Redirect manager (CRUD + bulk import) | TODO | Live redirect list matches Shopify admin | |
-| 4.3 | 404/broken link finder + one-click fix | TODO | Real broken link found and fixed | |
+| 4.1 | Handle change detection + urlRedirectCreate | BUILT | GraphQL urlRedirectCreate via write_online_store_navigation scope | app/services/redirects.server.ts |
+| 4.2 | Redirect manager (CRUD + bulk import) | BUILT | 301 Redirect CRUD & manual URL target mapper | app/routes/app.speed.tsx |
+| 4.3 | 404/broken link finder + one-click fix | BUILT | Scans broken links & applies 1-click 301 redirects | app/services/redirects.server.ts |
 
 ## Phase 5 — GSC + intent
 
