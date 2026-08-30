@@ -219,5 +219,28 @@ model AiBudget {
   updated_at           DateTime @updatedAt
 }
 
+model AiCitation {
+  id                     String   @id @default(uuid())
+  shop_domain            String
+  query                  String
+  ai_engine              String   // chatgpt | claude | perplexity | gemini
+  cited                  Boolean  @default(false)
+  competitor_domains_json String?
+  checked_at             DateTime @default(now())
+}
+
+model AutopilotQueue {
+  id              String   @id @default(uuid())
+  shop_domain     String
+  resource_gid    String
+  resource_type   String   // product | collection | article
+  suggested_title String
+  suggested_desc  String
+  status          String   @default("pending") // pending | approved | rejected | applied
+  created_at      DateTime @default(now())
+  applied_at      DateTime?
+}
+
+
 
 

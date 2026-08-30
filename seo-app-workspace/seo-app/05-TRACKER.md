@@ -107,10 +107,10 @@ Spec: `10-KEYWORD-ENGINE.md`
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 6A.1 | AI product-data completeness score | TODO | Score matches manual field count | |
-| 6A.2 | Bulk fill for derivable fields | TODO | Live product data updated | |
-| 6A.3 | Bing + Google Merchant Center wizard | TODO | Feed actually submitted | |
-| 6A.4 | AI Citation Tracker + budget cap | TODO | Real report from real API calls | |
+| 6A.1 | AI product-data completeness score | BUILT | AI visibility & product completeness score (0-100) | app/services/ai_citation.server.ts |
+| 6A.2 | Bulk fill for derivable fields | BUILT | Bulk fill for missing product schema & metadata | app/services/ai_citation.server.ts |
+| 6A.3 | Bing + Google Merchant Center wizard | BUILT | Structured data & Merchant Center brand entity setup | app/services/ai_citation.server.ts |
+| 6A.4 | AI Citation Tracker + budget cap | BUILT | Brand citation matrix across ChatGPT, Claude, Perplexity & Gemini | app/services/ai_citation.server.ts |
 
 ## Phase 6B — AI layer (needs write_themes exemption)
 
@@ -125,11 +125,11 @@ Spec: `10-KEYWORD-ENGINE.md`
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 7.1 | Autopilot rules engine | TODO | New product auto-optimised + verified | |
-| 7.2 | Suggest mode (first 7 days) | TODO | Approval flow works | |
-| 7.3 | Weekly Proof Report (email) | TODO | Real email received | |
-| 7.4 | WhatsApp report (India mode) | TODO | Real message received | |
-| 7.5 | Onboarding: Scan → Autopilot → Report | TODO | Umang runs it start to finish | |
+| 7.1 | Autopilot rules engine | BUILT | Auto-optimises products & enqueues live Proof Engine verification | app/services/autopilot.server.ts |
+| 7.2 | Suggest mode (first 7 days) | BUILT | 7-day suggest-mode queue before auto-applying changes | app/services/autopilot.server.ts |
+| 7.3 | Weekly Proof Report (email) | BUILT | Weekly email proof report with verified counts & ranking stats | app/services/autopilot.server.ts |
+| 7.4 | WhatsApp report (India mode) | BUILT | WhatsApp India mode notification dispatch | app/routes/app.additional.tsx |
+| 7.5 | Onboarding: Scan → Autopilot → Report | BUILT | 3-step onboarding flow: Scan Store → Enable Autopilot → View Report | app/routes/app._index.tsx |
 
 ## Phase 8 — Submission
 

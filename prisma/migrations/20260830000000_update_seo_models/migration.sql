@@ -209,6 +209,41 @@ CREATE TABLE "AiBudget" (
     "updated_at" DATETIME NOT NULL
 );
 
+-- CreateTable
+CREATE TABLE "AiCitation" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "query" TEXT NOT NULL,
+    "ai_engine" TEXT NOT NULL,
+    "cited" BOOLEAN NOT NULL DEFAULT false,
+    "competitor_domains_json" TEXT,
+    "checked_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "AutopilotQueue" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "resource_gid" TEXT NOT NULL,
+    "resource_type" TEXT NOT NULL,
+    "suggested_title" TEXT NOT NULL,
+    "suggested_desc" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "applied_at" DATETIME
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
+CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
+CREATE UNIQUE INDEX "SeoSetting_shop_domain_key" ON "SeoSetting"("shop_domain");
+CREATE UNIQUE INDEX "PageRecord_shop_domain_url_key" ON "PageRecord"("shop_domain", "url");
+CREATE UNIQUE INDEX "GscConnection_shop_domain_key" ON "GscConnection"("shop_domain");
+CREATE UNIQUE INDEX "Keyword_term_market_key" ON "Keyword"("term", "market");
+CREATE UNIQUE INDEX "KeywordAssignment_resource_gid_market_role_key" ON "KeywordAssignment"("resource_gid", "market", "role");
+CREATE UNIQUE INDEX "AiBudget_shop_domain_key" ON "AiBudget"("shop_domain");
+
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
 CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
