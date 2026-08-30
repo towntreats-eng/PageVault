@@ -8,17 +8,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   console.log(`[GDPR Webhook] Received ${topic} for ${shop}. Purging all shop data.`);
 
   if (shop) {
-    // Execute full database redaction for shop
-    await db.review.deleteMany({ where: { shop_domain: shop } });
-    await db.wishlistItem.deleteMany({ where: { shop_domain: shop } });
-    await db.stockAlert.deleteMany({ where: { shop_domain: shop } });
-    await db.install.deleteMany({ where: { shop_domain: shop } });
-    await db.event.deleteMany({ where: { shop_domain: shop } });
-    await db.subscription.deleteMany({ where: { shop_domain: shop } });
-    await db.shop.deleteMany({ where: { domain: shop } });
-    await db.session.deleteMany({ where: { shop } });
-
-    console.log(`[GDPR Webhook] Completed 48-hour data purge for shop ${shop}`);
+    await db.seoAudit.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.seoSetting.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.imageOptLog.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.brokenLink.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.event.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.subscription.deleteMany({ where: { shop_domain: shop } }).catch(() => null);
+    await db.shop.deleteMany({ where: { domain: shop } }).catch(() => null);
+    await db.session.deleteMany({ where: { shop } }).catch(() => null);
   }
 
   return new Response(JSON.stringify({ status: "success", purged: true }), {
