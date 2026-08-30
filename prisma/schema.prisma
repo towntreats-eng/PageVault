@@ -161,4 +161,63 @@ model Change {
   reverted_at  DateTime?
 }
 
+model GscConnection {
+  id            String   @id @default(uuid())
+  shop_domain   String   @unique
+  refresh_token String
+  site_url      String
+  connected_at  DateTime @default(now())
+}
+
+model Keyword {
+  id          String   @id @default(uuid())
+  term        String
+  market      String   @default("US")
+  language    String   @default("en")
+  volume      Int      @default(0)
+  cpc         Float    @default(0.0)
+  difficulty  Int      @default(0)
+  intent      String   @default("transactional") // transactional | informational | navigational
+  winnability String   @default("winnable_now") // winnable_now | winnable_6m | aspirational
+  source      String   @default("gsc")
+  fetched_at  DateTime @default(now())
+
+  @@unique([term, market])
+}
+
+model KeywordAssignment {
+  id           String   @id @default(uuid())
+  shop_domain  String
+  keyword_id   String
+  resource_gid String
+  url          String
+  market       String   @default("US")
+  role         String   @default("primary") // primary | secondary
+  assigned_at  DateTime @default(now())
+
+  @@unique([resource_gid, market, role])
+}
+
+model RankSnapshot {
+  id                   String   @id @default(uuid())
+  assignment_id        String
+  market               String   @default("US")
+  device               String   @default("desktop") // desktop | mobile
+  position             Int      @default(0)
+  ai_overview_present  Boolean  @default(false)
+  top10_domains_json   String?
+  checked_at           DateTime @default(now())
+}
+
+model AiBudget {
+  id                   String   @id @default(uuid())
+  shop_domain          String   @unique
+  month                String   // YYYY-MM
+  llm_spend_usd        Float    @default(0.0)
+  dataforseo_spend_usd Float    @default(0.0)
+  budget_cap_usd       Float    @default(15.0)
+  updated_at           DateTime @updatedAt
+}
+
+
 

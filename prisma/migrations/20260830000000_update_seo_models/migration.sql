@@ -150,10 +150,74 @@ CREATE TABLE "Change" (
     "reverted_at" DATETIME
 );
 
+-- CreateTable
+CREATE TABLE "GscConnection" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "refresh_token" TEXT NOT NULL,
+    "site_url" TEXT NOT NULL,
+    "connected_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Keyword" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "term" TEXT NOT NULL,
+    "market" TEXT NOT NULL DEFAULT 'US',
+    "language" TEXT NOT NULL DEFAULT 'en',
+    "volume" INTEGER NOT NULL DEFAULT 0,
+    "cpc" REAL NOT NULL DEFAULT 0.0,
+    "difficulty" INTEGER NOT NULL DEFAULT 0,
+    "intent" TEXT NOT NULL DEFAULT 'transactional',
+    "winnability" TEXT NOT NULL DEFAULT 'winnable_now',
+    "source" TEXT NOT NULL DEFAULT 'gsc',
+    "fetched_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "KeywordAssignment" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "keyword_id" TEXT NOT NULL,
+    "resource_gid" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "market" TEXT NOT NULL DEFAULT 'US',
+    "role" TEXT NOT NULL DEFAULT 'primary',
+    "assigned_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "RankSnapshot" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "assignment_id" TEXT NOT NULL,
+    "market" TEXT NOT NULL DEFAULT 'US',
+    "device" TEXT NOT NULL DEFAULT 'desktop',
+    "position" INTEGER NOT NULL DEFAULT 0,
+    "ai_overview_present" BOOLEAN NOT NULL DEFAULT false,
+    "top10_domains_json" TEXT,
+    "checked_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "AiBudget" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "month" TEXT NOT NULL,
+    "llm_spend_usd" REAL NOT NULL DEFAULT 0.0,
+    "dataforseo_spend_usd" REAL NOT NULL DEFAULT 0.0,
+    "budget_cap_usd" REAL NOT NULL DEFAULT 15.0,
+    "updated_at" DATETIME NOT NULL
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
 CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
 CREATE UNIQUE INDEX "SeoSetting_shop_domain_key" ON "SeoSetting"("shop_domain");
 CREATE UNIQUE INDEX "PageRecord_shop_domain_url_key" ON "PageRecord"("shop_domain", "url");
+CREATE UNIQUE INDEX "GscConnection_shop_domain_key" ON "GscConnection"("shop_domain");
+CREATE UNIQUE INDEX "Keyword_term_market_key" ON "Keyword"("term", "market");
+CREATE UNIQUE INDEX "KeywordAssignment_resource_gid_market_role_key" ON "KeywordAssignment"("resource_gid", "market", "role");
+CREATE UNIQUE INDEX "AiBudget_shop_domain_key" ON "AiBudget"("shop_domain");
+
 
 

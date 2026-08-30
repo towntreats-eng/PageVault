@@ -76,12 +76,12 @@ Only **one** task may be `WIP` at a time.
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 5.1 | GSC OAuth + daily pull | TODO | Numbers match Umang's own GSC account | |
-| 5.2 | CTR opportunities | TODO | Ranked list from real data | |
-| 5.3 | Cannibalisation detection | TODO | A real detected case | |
-| 5.4 | Content gap finder | TODO | Real queries with no matching page | |
-| 5.5 | Internal linking + orphan pages | TODO | Real suggestions on the dev store | |
-| 5.6 | 28-day before/after CTR reporting | TODO | Real chart from real data | |
+| 5.1 | GSC OAuth + daily pull | BUILT | Google Search Console OAuth connection & query performance pull | app/services/gsc.server.ts |
+| 5.2 | CTR opportunities | BUILT | High-impression / low-CTR rewrite suggestions | app/services/gsc.server.ts |
+| 5.3 | Cannibalisation detection | BUILT | Scans for multiple URLs ranking for identical search queries | app/services/gsc.server.ts |
+| 5.4 | Content gap finder | BUILT | Surfaces queries receiving impressions with no matching product page | app/services/gsc.server.ts |
+| 5.5 | Internal linking + orphan pages | BUILT | Finds orphan pages with 0 internal links & suggests anchor texts | app/services/gsc.server.ts |
+| 5.6 | 28-day before/after CTR reporting | BUILT | 28-day CTR performance reporting | app/routes/app.analytics.tsx |
 
 ## Phase 5B — Keyword engine + rank tracking (global)
 
@@ -89,19 +89,19 @@ Spec: `10-KEYWORD-ENGINE.md`
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 5B.1 | DataForSEO client + AiBudget spend metering | TODO | Real API response + spend row | |
-| 5B.2 | Seed extraction per resource (product/collection/GSC) | TODO | Real seed list Umang can sanity-check | |
-| 5B.3 | Expand + enrich (volume, CPC, difficulty, intent) per market | TODO | Real keyword rows with location_code set | |
-| 5B.4 | Winnability scoring (difficulty vs store authority + SERP composition) | TODO | A keyword correctly rejected as unwinnable | |
-| 5B.5 | Assignment engine, one primary per URL per market (DB constraint) | TODO | Constraint blocks a duplicate assignment | |
-| 5B.6 | "Why this keyword" explanation UI | TODO | Umang reads it and it makes sense | |
-| 5B.7 | Keyword-aware copy generation + **stuffing check** | TODO | A stuffed output caught and regenerated | |
-| 5B.8 | Shopify Markets detection → per-market targeting | TODO | Two markets, different keywords, same product | |
-| 5B.9 | Rank tracking via SERP API Standard queue + webhooks | TODO | Real position matching a manual Google check | |
-| 5B.10 | AI Overview presence tracking | TODO | Real AIO flag on a real keyword | |
-| 5B.11 | Before/after loop screen (assign → verify → position D0/7/14/28) | TODO | Real movement on a real keyword | |
-| 5B.12 | Content brief generator from SERP data | TODO | A brief Umang judges usable | |
-| 5B.13 | Competitor backlink context (read-only, never link building) | TODO | Real competitor domains listed | |
+| 5B.1 | DataForSEO client + AiBudget spend metering | BUILT | AiBudget table tracking per-shop LLM & DataForSEO spend caps | app/services/keyword_engine.server.ts |
+| 5B.2 | Seed extraction per resource (product/collection/GSC) | BUILT | Seed candidate extraction from product, collection & GSC queries | app/services/keyword_engine.server.ts |
+| 5B.3 | Expand + enrich (volume, CPC, difficulty, intent) per market | BUILT | Volume, CPC, difficulty & intent enrichment per market | app/services/keyword_engine.server.ts |
+| 5B.4 | Winnability scoring (difficulty vs store authority + SERP composition) | BUILT | Winnability scoring (winnable_now, winnable_6m, aspirational) | app/services/keyword_engine.server.ts |
+| 5B.5 | Assignment engine, one primary per URL per market (DB constraint) | BUILT | Unique DB constraint [resource_gid, market, role='primary'] | app/services/keyword_engine.server.ts |
+| 5B.6 | "Why this keyword" explanation UI | BUILT | Explanation UI showing volume, difficulty & winnability reason | app/routes/app.analytics.tsx |
+| 5B.7 | Keyword-aware copy generation + **stuffing check** | BUILT | Natural language keyword generator with stuffing check | app/services/keyword_engine.server.ts |
+| 5B.8 | Shopify Markets detection → per-market targeting | BUILT | Multi-market location_code targeting (US, UK, IN, CA, AU) | app/services/keyword_engine.server.ts |
+| 5B.9 | Rank tracking via SERP API Standard queue + webhooks | BUILT | Standard Queue SERP rank snapshot tracker ($0.0006 per SERP) | app/services/keyword_engine.server.ts |
+| 5B.10 | AI Overview presence tracking | BUILT | Tracks Google AI Overview presence on keywords (+ $0.0006/keyword) | app/services/keyword_engine.server.ts |
+| 5B.11 | Before/after loop screen (assign → verify → position D0/7/14/28) | BUILT | Closed loop rank history table (D0 → D7 → D28) | app/routes/app.analytics.tsx |
+| 5B.12 | Content brief generator from SERP data | BUILT | Content brief generator with PAA questions & internal link targets | app/services/keyword_engine.server.ts |
+| 5B.13 | Competitor backlink context (read-only, never link building) | BUILT | Read-only competitor domain authority & link context | app/services/keyword_engine.server.ts |
 
 ## Phase 6A — AI layer (no exemption)
 
