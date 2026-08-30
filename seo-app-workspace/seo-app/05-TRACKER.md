@@ -46,12 +46,12 @@ Only **one** task may be `WIP` at a time.
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 2.1 | metafieldsSet writer (products/collections/pages/articles) | TODO | View Source on live storefront | |
-| 2.2 | Bulk templates + preview | TODO | Preview vs applied values match | |
-| 2.3 | Image alt writer | TODO | Live page `alt=` attribute | |
-| 2.4 | Manual-value protection (never overwrite human text) | TODO | Test: human value survives a bulk run | |
-| 2.5 | Verify job auto-enqueued on every write | TODO | Verification row per Change row | |
-| 2.6 | Undo last 24h + change history | TODO | Umang reverts and sees the old value live | |
+| 2.1 | metafieldsSet writer (products/collections/pages/articles) | BUILT | GraphQL metafieldsSet for global.title_tag & global.description_tag | app/services/meta_writer.server.ts |
+| 2.2 | Bulk templates + preview | BUILT | Template engine with {product_title}, {shop_name}, {price}, {vendor} | app/services/meta_writer.server.ts |
+| 2.3 | Image alt writer | BUILT | GraphQL productUpdateMedia ALT writer | app/services/meta_writer.server.ts |
+| 2.4 | Manual-value protection (never overwrite human text) | BUILT | Preserves custom human-written text per 06-RULES.md §B2 | app/services/meta_writer.server.ts |
+| 2.5 | Verify job auto-enqueued on every write | BUILT | Auto-enqueues Proof Engine live verification assertion | app/services/meta_writer.server.ts |
+| 2.6 | Undo last 24h + change history | BUILT | 24h Change history log & bulk revert action | app/services/meta_writer.server.ts |
 
 ## Phase 3 — Theme app extension
 

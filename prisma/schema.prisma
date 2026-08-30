@@ -149,3 +149,16 @@ model Verification {
   attempted_at   DateTime @default(now())
 }
 
+model Change {
+  id           String    @id @default(uuid())
+  shop_domain  String
+  resource_gid String
+  field        String    // title_tag | description_tag | alt | handle | schema
+  before_value String?
+  after_value  String
+  source       String    @default("manual") // manual | autopilot | bulk
+  applied_at   DateTime  @default(now())
+  reverted_at  DateTime?
+}
+
+

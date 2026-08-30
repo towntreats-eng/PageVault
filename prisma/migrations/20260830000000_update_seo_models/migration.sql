@@ -137,9 +137,23 @@ CREATE TABLE "Verification" (
     "attempted_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- CreateTable
+CREATE TABLE "Change" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "resource_gid" TEXT NOT NULL,
+    "field" TEXT NOT NULL,
+    "before_value" TEXT,
+    "after_value" TEXT NOT NULL,
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "applied_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "reverted_at" DATETIME
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
 CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
 CREATE UNIQUE INDEX "SeoSetting_shop_domain_key" ON "SeoSetting"("shop_domain");
 CREATE UNIQUE INDEX "PageRecord_shop_domain_url_key" ON "PageRecord"("shop_domain", "url");
+
 
