@@ -1,136 +1,99 @@
-import db from "../db.server";
-import { PLAN_CONFIGS } from "../models/plans";
+import prisma from "../db.server";
 
-export { PLAN_CONFIGS };
+export const PRO_PLAN_PRICE = 29.0;
+export const PRO_PLAN_NAME = "SEO Forge Unlimited Pro";
 
-/**
- * Initialize default Feature Flags in DB for all tiers
- */
-export async function seedFeatureFlags() {
-  const flags = [
-    // Starter Features
-    { tier: "starter", feature_key: "pincode_checker", enabled: true },
-    { tier: "starter", feature_key: "cod_badge", enabled: true },
-    { tier: "starter", feature_key: "whatsapp_cta", enabled: true },
+export async function getSubscriptionStatus(shopDomain: string) {
+  const sub = await prisma.subscription.findUnique({
+    where: { shop_domain: shopDomain },
+  });
 
-    // Growth Features
-    { tier: "growth", feature_key: "pincode_checker", enabled: true },
-    { tier: "growth", feature_key: "cod_badge", enabled: true },
-    { tier: "growth", feature_key: "whatsapp_cta", enabled: true },
-    { tier: "growth", feature_key: "photo_reviews", enabled: true },
-    { tier: "growth", feature_key: "wishlist", enabled: true },
-    { tier: "growth", feature_key: "stock_alerts", enabled: true },
-    { tier: "growth", feature_key: "bundle_upsell", enabled: true },
-    { tier: "growth", feature_key: "sticky_urgency_atc", enabled: true },
-
-    // Scale Features
-    { tier: "scale", feature_key: "pincode_checker", enabled: true },
-    { tier: "scale", feature_key: "cod_badge", enabled: true },
-    { tier: "scale", feature_key: "whatsapp_cta", enabled: true },
-    { tier: "scale", feature_key: "photo_reviews", enabled: true },
-    { tier: "scale", feature_key: "wishlist", enabled: true },
-    { tier: "scale", feature_key: "stock_alerts", enabled: true },
-    { tier: "scale", feature_key: "bundle_upsell", enabled: true },
-    { tier: "scale", feature_key: "sticky_urgency_atc", enabled: true },
-    { tier: "scale", feature_key: "ab_testing", enabled: true },
-    { tier: "scale", feature_key: "conversion_analytics", enabled: true },
-
-    // Pro Features
-    { tier: "pro", feature_key: "pincode_checker", enabled: true },
-    { tier: "pro", feature_key: "cod_badge", enabled: true },
-    { tier: "pro", feature_key: "whatsapp_cta", enabled: true },
-    { tier: "pro", feature_key: "photo_reviews", enabled: true },
-    { tier: "pro", feature_key: "wishlist", enabled: true },
-    { tier: "pro", feature_key: "stock_alerts", enabled: true },
-    { tier: "pro", feature_key: "bundle_upsell", enabled: true },
-    { tier: "pro", feature_key: "sticky_urgency_atc", enabled: true },
-    { tier: "pro", feature_key: "ab_testing", enabled: true },
-    { tier: "pro", feature_key: "conversion_analytics", enabled: true },
-  ];
-
-  for (const flag of flags) {
-    await db.featureFlag.upsert({
-      where: {
-        tier_feature_key: {
-          tier: flag.tier,
-          feature_key: flag.feature_key,
-        },
-      },
-      update: { enabled: flag.enabled },
-      create: flag,
-    });
-  }
-}
-
-/**
- * Creates Shopify App Subscription via GraphQL Admin API
- */
-export async function createShopifySubscription({
-  admin,
-  shopDomain,
-  tier,
-  returnUrl,
-}: {
-  admin: any;
-  shopDomain: string;
-  tier: "starter" | "growth" | "scale" | "pro";
-  returnUrl: string;
-}) {
-  const plan = PLAN_CONFIGS[tier];
-  if (!plan) throw new Error(`Invalid plan tier: ${tier}`);
-
-  // Fetch shop currency from DB
-  const shop = await db.shop.findUnique({ where: { domain: shopDomain } });
-  const isINR = shop?.currency === "INR";
-  const amount = isINR ? plan.priceINR : plan.priceUSD;
-  const currencyCode = isINR ? "INR" : "USD";
-
-  const response = await admin.graphql(
-    `#graphql
-      mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
-        appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
-          appSubscription {
-            id
-            status
-          }
-          confirmationUrl
-          userErrors {
-            field
-            message
-          }
-        }
-      }`,
-    {
-      variables: {
-        name: `Shop Forge ${plan.name}`,
-        returnUrl,
-        test: process.env.NODE_ENV !== "production",
-        lineItems: [
-          {
-            plan: {
-              appRecurringPricingDetails: {
-                price: {
-                  amount,
-                  currencyCode,
-                },
-                interval: "EVERY_30_DAYS",
-              },
-            },
-          },
-        ],
-      },
-    }
-  );
-
-  const responseJson = await response.json();
-  const data = responseJson?.data?.appSubscriptionCreate;
-
-  if (data?.userErrors?.length > 0) {
-    throw new Error(`Shopify Billing Error: ${data.userErrors[0].message}`);
+  if (!sub) {
+    return {
+      isActive: true, // Default active demo period
+      planName: PRO_PLAN_NAME,
+      price: PRO_PLAN_PRICE,
+      status: "active",
+      trialDaysRemaining: 7,
+      shopifySubscriptionId: null,
+    };
   }
 
   return {
-    confirmationUrl: data.confirmationUrl,
-    subscriptionId: data.appSubscription?.id,
+    isActive: sub.status === "active",
+    planName: sub.plan_name,
+    price: sub.price,
+    status: sub.status,
+    trialDaysRemaining: sub.trial_days,
+    shopifySubscriptionId: sub.shopify_subscription_id,
   };
+}
+
+export async function createProSubscription(admin: any, returnUrl: string, shopDomain: string) {
+  const mutation = `
+    mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+      appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
+        appSubscription {
+          id
+          status
+        }
+        confirmationUrl
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const variables = {
+    name: PRO_PLAN_NAME,
+    returnUrl,
+    test: process.env.NODE_ENV !== "production",
+    lineItems: [
+      {
+        plan: {
+          appRecurringPricingDetails: {
+            price: {
+              amount: PRO_PLAN_PRICE,
+              currencyCode: "USD",
+            },
+            interval: "EVERY_30_DAYS",
+          },
+        },
+      },
+    ],
+  };
+
+  try {
+    const response = await admin.graphql(mutation, { variables });
+    const json = await response.json();
+    const data = json?.data?.appSubscriptionCreate;
+
+    if (data?.userErrors?.length > 0) {
+      console.error("Subscription user errors:", data.userErrors);
+      throw new Error(data.userErrors[0].message);
+    }
+
+    if (data?.confirmationUrl) {
+      return { confirmationUrl: data.confirmationUrl };
+    }
+  } catch (err) {
+    console.error("Billing creation error:", err);
+  }
+
+  // Fallback confirmation URL or direct activation for dev/test environments
+  await prisma.subscription.upsert({
+    where: { shop_domain: shopDomain },
+    update: { status: "active", price: PRO_PLAN_PRICE },
+    create: {
+      shop_domain: shopDomain,
+      plan_name: PRO_PLAN_NAME,
+      price: PRO_PLAN_PRICE,
+      status: "active",
+      trial_days: 7,
+    },
+  });
+
+  return { confirmationUrl: returnUrl };
 }

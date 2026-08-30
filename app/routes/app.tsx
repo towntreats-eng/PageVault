@@ -22,15 +22,13 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">
-          Dashboard
+          ⚡ Auto SEO Dashboard
         </Link>
-        <Link to="/app/catalog">Page & Section Library</Link>
-        <Link to="/app/india">India Essentials</Link>
-        <Link to="/app/reviews">Photo Reviews</Link>
-        <Link to="/app/growth">Growth Features</Link>
-        <Link to="/app/analytics">Analytics & A/B</Link>
-        <Link to="/app/billing">Plans & Billing</Link>
-        <Link to="/app/audit">App Audit</Link>
+        <Link to="/app/images">🖼️ Image Optimizer</Link>
+        <Link to="/app/meta">📝 Meta Tags</Link>
+        <Link to="/app/schema">🏷️ JSON-LD Schema</Link>
+        <Link to="/app/speed">🚀 Speed & Links</Link>
+        <Link to="/app/billing">💳 Pro Plan ($29/mo)</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

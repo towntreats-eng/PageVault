@@ -1,207 +1,126 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
+import { useLoaderData, useSubmit, useActionData } from "@remix-run/react";
 import {
   Page,
-  Layout,
-  Text,
   Card,
+  Text,
   Badge,
   BlockStack,
   InlineStack,
-  Grid,
   Button,
-  Box,
   Banner,
-  ProgressBar,
+  List,
+  Box,
+  Divider,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { CheckIcon, StarIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
-import { PLAN_CONFIGS } from "../models/plans";
-import { createShopifySubscription, seedFeatureFlags } from "../services/billing.server";
-import { getShopEntitlements, invalidateShopEntitlementCache } from "../services/entitlement.server";
-import db from "../db.server";
+import { getSubscriptionStatus, createProSubscription } from "../services/billing.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
+  const subscription = await getSubscriptionStatus(session.shop);
 
-  // Ensure DB feature flags are seeded
-  await seedFeatureFlags();
-
-  const entitlement = await getShopEntitlements(shopDomain);
-  const shopRecord = await db.shop.findUnique({ where: { domain: shopDomain } });
-
-  const currency = shopRecord?.currency || "USD";
-  const isINR = currency === "INR";
-
-  return {
-    shopDomain,
-    currentTier: entitlement.tier,
-    currency,
-    isINR,
-    orderCount: entitlement.orderCount,
-    capOrders: entitlement.capOrders,
-    overageState: entitlement.overageState,
-  };
+  return json({ subscription, shopDomain: session.shop });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const formData = await request.formData();
-  const targetTier = String(formData.get("targetTier") || "");
-  const shopDomain = session.shop;
+  const appUrl = process.env.SHOPIFY_APP_URL || "https://pagevault-production.up.railway.app";
+  const returnUrl = `${appUrl}/app/billing/callback?shop=${session.shop}`;
 
-  if (targetTier === "free") {
-    // Cancel subscription or downgrade to Free tier
-    await db.subscription.updateMany({
-      where: { shop_domain: shopDomain, status: "active" },
-      data: { status: "cancelled" },
-    });
-
-    await db.shop.update({
-      where: { domain: shopDomain },
-      data: { plan: "free" },
-    });
-
-    invalidateShopEntitlementCache(shopDomain);
-    return json({ success: true, message: "Downgraded to Free tier. Layouts remain fully intact!" });
-  }
-
-  if (["starter", "growth", "scale", "pro"].includes(targetTier)) {
-    const appUrl = process.env.SHOPIFY_APP_URL || "https://example.com";
-    const returnUrl = `${appUrl}/app/billing/callback?shop=${shopDomain}&tier=${targetTier}`;
-
-    try {
-      const { confirmationUrl } = await createShopifySubscription({
-        admin,
-        shopDomain,
-        tier: targetTier as any,
-        returnUrl,
-      });
-
-      if (confirmationUrl) {
-        return redirect(confirmationUrl);
-      }
-    } catch (err: any) {
-      return json({ error: err.message || "Failed to create subscription" }, { status: 400 });
+  try {
+    const { confirmationUrl } = await createProSubscription(admin, returnUrl, session.shop);
+    if (confirmationUrl) {
+      return redirect(confirmationUrl);
     }
+  } catch (err: any) {
+    return json({ error: err.message || "Failed to initiate subscription." });
   }
 
-  return json({ error: "Invalid tier selection" }, { status: 400 });
+  return json({ success: true, message: "Subscribed to $29/mo Unlimited SEO Pro Plan!" });
 };
 
-export default function ShopForgeBilling() {
-  const { currentTier, currency, isINR, orderCount, capOrders, overageState } = useLoaderData<typeof loader>();
+export default function BillingPage() {
+  const { subscription } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
 
-  const handleSelectPlan = (tier: string) => {
-    const form = new FormData();
-    form.append("targetTier", tier);
-    submit(form, { method: "post" });
+  const handleSubscribe = () => {
+    submit({}, { method: "post" });
   };
 
-  const capPercentage = capOrders > 0 ? Math.min(100, Math.round((orderCount / capOrders) * 100)) : 0;
-
   return (
-    <Page title="Shop Forge — Plans & Subscriptions">
-      <TitleBar title="Billing | Shop Forge" />
+    <Page
+      title="💳 Pro Subscription & Pricing Plan"
+      subtitle="Simple, transparent pricing for complete store SEO & image optimization."
+    >
       <BlockStack gap="500">
         {actionData?.error && (
-          <Banner title="Subscription Error" tone="critical">
+          <Banner title="Billing Error" status="critical">
             <p>{actionData.error}</p>
           </Banner>
         )}
 
         {actionData?.message && (
-          <Banner title="Plan Updated" tone="success">
+          <Banner title="Plan Activated" status="success">
             <p>{actionData.message}</p>
           </Banner>
         )}
 
-        {/* Order Volume Cap Gauge */}
-        <Card>
-          <BlockStack gap="300">
-            <InlineStack align="space-between" blockAlign="center">
-              <Text as="h2" variant="headingMd">
-                Billing Period Order Usage
-              </Text>
-              <Badge tone={overageState === "exceeded" ? "critical" : overageState === "approaching" ? "warning" : "success"}>
-                {overageState.toUpperCase()}
-              </Badge>
-            </InlineStack>
-
-            <Text as="p" variant="bodySm" tone="subdued">
-              Current Plan: <strong>{currentTier.toUpperCase()}</strong> • Order Limit:{" "}
-              {capOrders === -1 ? "Unlimited" : `${capOrders} Orders/mo`}
+        <Box padding="600" background="bg-surface-secondary" borderRadius="300">
+          <BlockStack gap="400" align="center">
+            <Badge tone="attention" size="large">⭐ ALL-IN-ONE AUTOMATED PLAN</Badge>
+            <Text as="h1" variant="heading2Xl" alignment="center">
+              Unlimited Auto SEO & Image Compression
+            </Text>
+            <Text as="p" variant="bodyLg" tone="subdued" alignment="center">
+              Everything your Shopify store needs to rank higher on Google and load blazingly fast.
             </Text>
 
-            {capOrders > 0 && (
-              <BlockStack gap="200">
-                <ProgressBar progress={capPercentage} tone={capPercentage >= 100 ? "critical" : capPercentage >= 80 ? "highlight" : "primary"} />
-                <Text as="span" variant="bodySm">
-                  {orderCount} of {capOrders} orders processed ({capPercentage}%)
-                </Text>
-              </BlockStack>
-            )}
+            <InlineStack gap="100" align="center" blockAlign="baseline">
+              <Text as="span" variant="heading3Xl" fontWeight="bold">$29</Text>
+              <Text as="span" variant="headingLg" tone="subdued">/ month</Text>
+            </InlineStack>
+            <Badge tone="success">7-DAY FREE TRIAL INCLUDED</Badge>
 
-            {overageState === "approaching" && (
-              <Banner title="Approaching Order Cap" tone="warning">
-                <p>You have reached 80%+ of your current plan order cap. Upgrade to the next tier to avoid feature pauses.</p>
-              </Banner>
-            )}
+            <Button
+              variant="primary"
+              size="large"
+              onClick={handleSubscribe}
+            >
+              {subscription.isActive ? "Active Subscription ($29/mo)" : "Start 7-Day Free Trial ($29/mo)"}
+            </Button>
+          </BlockStack>
+        </Box>
+
+        <Card padding="500">
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">What's Included in the $29/month Pro Plan:</Text>
+            <Divider />
+            <List type="bullet">
+              <List.Item>
+                <Text as="span" fontWeight="bold">Unlimited Smart WebP Image Compression:</Text> Compress all product, collection & blog images automatically (saving 60-80% bandwidth).
+              </List.Item>
+              <List.Item>
+                <Text as="span" fontWeight="bold">Automatic Image ALT Text Generator:</Text> Auto-fix missing ALT tags for 100% Google Image search indexability.
+              </List.Item>
+              <List.Item>
+                <Text as="span" fontWeight="bold">Auto Product & Collection Meta Titles/Descriptions:</Text> Define high-CTR templates to eliminate missing meta tags.
+              </List.Item>
+              <List.Item>
+                <Text as="span" fontWeight="bold">Google JSON-LD Rich Snippet Schema Injection:</Text> Enable Product ratings, price badges, and sitelinks searchbox.
+              </List.Item>
+              <List.Item>
+                <Text as="span" fontWeight="bold">404 Broken Link Scanner & Auto Redirects:</Text> Prevent lost traffic with instant redirect rules.
+              </List.Item>
+              <List.Item>
+                <Text as="span" fontWeight="bold">24/7 Priority Support & Daily Auto Scans:</Text> Continuous background monitoring for your store.
+              </List.Item>
+            </List>
           </BlockStack>
         </Card>
-
-        {/* Pricing Ladder Grid */}
-        <Grid>
-          {Object.entries(PLAN_CONFIGS).map(([tierKey, plan]) => {
-            const isCurrent = currentTier === tierKey;
-            const priceText = isINR ? `₹${plan.priceINR.toLocaleString("en-IN")}/mo` : `$${plan.priceUSD}/mo`;
-
-            return (
-              <Grid.Cell key={tierKey} columnSpan={{ xs: 12, sm: 6, md: 4, lg: 4, xl: 4 }}>
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text as="h3" variant="headingSm">
-                        {plan.name}
-                      </Text>
-                      {isCurrent && <Badge tone="success">CURRENT PLAN</Badge>}
-                      {tierKey === "growth" && !isCurrent && <Badge tone="attention">MOST POPULAR</Badge>}
-                    </InlineStack>
-
-                    <div>
-                      <Text as="h2" variant="headingLg">
-                        {priceText}
-                      </Text>
-                      <Text as="span" variant="bodySm" tone="subdued">
-                        Order Cap: {plan.capOrders === -1 ? "Unlimited" : `≤${plan.capOrders} orders/mo`}
-                      </Text>
-                    </div>
-
-                    <BlockStack gap="200">
-                      {plan.features.map((feat, idx) => (
-                        <Text key={idx} as="p" variant="bodySm">
-                          ✓ {feat}
-                        </Text>
-                      ))}
-                    </BlockStack>
-
-                    <Button
-                      variant={isCurrent ? "secondary" : tierKey === "growth" ? "primary" : "secondary"}
-                      disabled={isCurrent}
-                      onClick={() => handleSelectPlan(tierKey)}
-                    >
-                      {isCurrent ? "Active Plan" : `Choose ${plan.tier.toUpperCase()}`}
-                    </Button>
-                  </BlockStack>
-                </Card>
-              </Grid.Cell>
-            );
-          })}
-        </Grid>
       </BlockStack>
     </Page>
   );
