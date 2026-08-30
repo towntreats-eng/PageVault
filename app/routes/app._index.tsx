@@ -17,6 +17,7 @@ import {
   Box,
   Divider,
   IndexTable,
+  List,
 } from "@shopify/polaris";
 import {
   CheckCircleIcon,
