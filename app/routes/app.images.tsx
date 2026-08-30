@@ -23,8 +23,8 @@ import { authenticate } from "../shopify.server";
 import { getImageOptStats, compressAllProductImages } from "../services/image.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const data = await getImageOptStats(session.shop);
+  const { admin, session } = await authenticate.admin(request);
+  const data = await getImageOptStats(admin, session.shop);
   return json(data);
 };
 
