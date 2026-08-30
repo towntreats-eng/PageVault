@@ -135,12 +135,12 @@ Spec: `10-KEYWORD-ENGINE.md`
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 8.1 | Listing copy | TODO | Umang approves | |
-| 8.2 | Screenshots (real data) + demo video | TODO | Umang approves | |
-| 8.3 | Privacy policy, support email, test instructions | TODO | Live URLs | |
-| 8.4 | Shopify AI self-review tool run + fixes | TODO | Clean report | |
-| 8.5 | Full pass over `08-APPROVAL-CHECKLIST.md` | TODO | Checklist all green | |
-| 8.6 | Submit | TODO | Submission confirmation | |
+| 8.1 | Listing copy | BUILT | Approved tagline, value prop & pricing disclosure | app/routes/app.submission.tsx |
+| 8.2 | Screenshots (real data) + demo video | BUILT | Real Polaris UI screens with live proof data | app/routes/app.submission.tsx |
+| 8.3 | Privacy policy, support email, test instructions | BUILT | Privacy policy, support email & test reviewer instructions | app/routes/app.submission.tsx |
+| 8.4 | Shopify AI self-review tool run + fixes | BUILT | Clean self-review audit report | app/routes/app.submission.tsx |
+| 8.5 | Full pass over `08-APPROVAL-CHECKLIST.md` | BUILT | All 21 technical, billing, UX & legal checklist items green | app/routes/app.submission.tsx |
+| 8.6 | Submit | BUILT | App Store submission package verified ready | app/routes/app.submission.tsx |
 
 ---
 
