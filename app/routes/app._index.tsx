@@ -16,7 +16,7 @@ import {
   Icon,
   Box,
   Divider,
-  List,
+  IndexTable,
 } from "@shopify/polaris";
 import {
   CheckCircleIcon,
@@ -25,9 +25,10 @@ import {
   MagicIcon,
   ShieldCheckMarkIcon,
   ProductIcon,
+  AlertCircleIcon,
 } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
-import { getSeoAuditSummary, runFullAutoSeoOptimization } from "../services/seo.server";
+import { getSeoAuditSummary, runFullAutoSeoOptimization, getSystematicStoreDiagnostic } from "../services/seo.server";
 import { getSubscriptionStatus } from "../services/billing.server";
 import { runStoreSitemapCrawl, getPageRecords } from "../services/crawler.server";
 import { getVerificationHistory } from "../services/proof_engine.server";
@@ -37,12 +38,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shopDomain = session.shop;
 
   const stats = await getSeoAuditSummary(admin, shopDomain);
+  const diagnostics = await getSystematicStoreDiagnostic(admin, shopDomain);
   const subscription = await getSubscriptionStatus(shopDomain);
   const pageRecords = await getPageRecords(shopDomain);
   const verifications = await getVerificationHistory(shopDomain);
 
   return json({
     stats,
+    diagnostics,
     subscription,
     shopDomain,
     pageRecords,
@@ -69,7 +72,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function SeoDashboard() {
-  const { stats, subscription, shopDomain, pageRecords, verifications } = useLoaderData<typeof loader>();
+  const { stats, diagnostics, subscription, shopDomain, verifications } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const navigation = useNavigation();
 
@@ -77,7 +80,7 @@ export default function SeoDashboard() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleRunCrawl = () => {
-    setSuccessMessage("Sitemap crawl triggered successfully!");
+    setSuccessMessage("Live store scan triggered! Scanning sitemap & catalog metadata.");
     submit({ intent: "run_sitemap_crawl" }, { method: "post" });
   };
 
@@ -86,24 +89,43 @@ export default function SeoDashboard() {
     submit({ intent: "run_auto_seo" }, { method: "post" });
   };
 
+  const diagnosticRowsMarkup = diagnostics.map((item, idx) => (
+    <IndexTable.Row id={item.id} key={idx} position={idx}>
+      <IndexTable.Cell>
+        <Text as="span" fontWeight="bold">{item.resourceTitle}</Text>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Badge tone={item.severity === "critical" ? "critical" : "warning"}>
+          {item.issueCode.replace("_", " ").toUpperCase()}
+        </Badge>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Text as="span" variant="bodySm" tone="subdued">{item.description}</Text>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Text as="span" variant="bodySm" tone="success">{item.fixAction}</Text>
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
+
   return (
     <Page
-      title="✨ ProofSEO — 1-Click Store SEO & Proof Engine"
-      subtitle="The simplest SEO app on Shopify. Click one button to fix titles, descriptions, images, and schema markup."
+      title="✨ ProofSEO — Instant Systematic Store SEO Audit"
+      subtitle="Instant real-time scan. Shows exactly what is missing or incorrect according to Google SEO."
     >
       <BlockStack gap="500">
         {/* Success Banner */}
         {successMessage && (
-          <Banner title="SEO Optimization Running!" status="success" onDismiss={() => setSuccessMessage(null)}>
+          <Banner title="SEO Optimization Complete!" status="success" onDismiss={() => setSuccessMessage(null)}>
             <p>{successMessage}</p>
           </Banner>
         )}
 
         {/* Store Has 0 Products Notice */}
         {!stats.hasProducts && (
-          <Banner title="Your Store Has 0 Products Right Now" status="info">
+          <Banner title="Your Store Currently Has 0 Products" status="info">
             <p>
-              Add your first product in <strong>Shopify Admin → Products</strong> and ProofSEO will automatically optimize its title, meta description, image ALT tags, and JSON-LD schema!
+              Add your first product in <strong>Shopify Admin → Products</strong> and ProofSEO will automatically run a live scan, optimize titles & descriptions, and verify it live on your storefront HTML!
             </p>
           </Banner>
         )}
@@ -119,16 +141,18 @@ export default function SeoDashboard() {
           </p>
         </Banner>
 
-        {/* Big Friendly 1-Click Magic Card */}
+        {/* Big Systematic Store Diagnostic Card */}
         <Card padding="600">
           <BlockStack gap="500">
             <InlineStack align="space-between" blockAlign="center">
               <BlockStack gap="200">
                 <Text as="h2" variant="headingLg">
-                  Store SEO Score & Proof Engine Status
+                  Systematic Store SEO Diagnostic Score
                 </Text>
                 <Text as="p" variant="bodyMd" tone="subdued">
-                  Server-side live page verification running against your storefront HTML.
+                  {diagnostics.length > 0
+                    ? `⚠️ Found ${diagnostics.length} itemized SEO defects on your live store. Click below to 1-click fix!`
+                    : "🟢 Perfect! Zero SEO defects detected on your live store catalog."}
                 </Text>
               </BlockStack>
               <Box
@@ -154,20 +178,20 @@ export default function SeoDashboard() {
               <InlineStack align="space-between" blockAlign="center">
                 <BlockStack gap="100">
                   <InlineStack gap="200">
-                    <Badge tone={stats.healthScore >= 90 ? "success" : "warning"}>
-                      {stats.healthScore >= 90 ? "100% PERFECT" : "OPTIMIZATION AVAILABLE"}
+                    <Badge tone={stats.healthScore >= 90 ? "success" : "critical"}>
+                      {stats.healthScore >= 90 ? "100% PERFECT SEO" : `${diagnostics.length} DEFECTS DETECTED`}
                     </Badge>
                     <Text as="span" variant="bodyLg" fontWeight="semibold">
                       {stats.totalProducts === 0
                         ? "Store is empty (0 products)"
-                        : `${stats.totalProducts} Real Store Products Mapped`}
+                        : `${stats.totalProducts} Store Products Mapped`}
                     </Text>
                   </InlineStack>
                 </BlockStack>
 
                 <InlineStack gap="300">
                   <Button size="large" onClick={handleRunCrawl}>
-                    🔍 Scan Sitemap
+                    🔍 Re-Scan Store
                   </Button>
                   <Button
                     variant="primary"
@@ -176,13 +200,44 @@ export default function SeoDashboard() {
                     loading={isOptimizing}
                     onClick={handleRunAutoFix}
                   >
-                    {isOptimizing ? "Optimizing Store..." : "🚀 Fix My Store SEO in 1 Click"}
+                    {isOptimizing ? "Fixing Store SEO..." : "🚀 1-Click Fix All SEO Defects"}
                   </Button>
                 </InlineStack>
               </InlineStack>
             </BlockStack>
           </BlockStack>
         </Card>
+
+        {/* Itemized Systematic Store SEO Defects Table */}
+        {diagnostics.length > 0 && (
+          <Card padding="0">
+            <BlockStack gap="300" padding="500">
+              <InlineStack align="space-between">
+                <Text as="h2" variant="headingMd">
+                  ⚠️ Itemized Store SEO Defects (Systematic Diagnostic Audit)
+                </Text>
+                <Badge tone="critical">{diagnostics.length} ISSUES FOUND</Badge>
+              </InlineStack>
+              <Text as="p" variant="bodySm" tone="subdued">
+                These specific products and images are not compliant with Google search guidelines:
+              </Text>
+            </BlockStack>
+
+            <IndexTable
+              resourceName={{ singular: "defect", plural: "defects" }}
+              itemCount={diagnostics.length}
+              headings={[
+                { title: "Product / Resource Title" },
+                { title: "Defect Category" },
+                { title: "Problem Description" },
+                { title: "Systematic Fix Action" },
+              ]}
+              selectable={false}
+            >
+              {diagnosticRowsMarkup}
+            </IndexTable>
+          </Card>
+        )}
 
         {/* 4 Minimal Metric Cards (Real Store Data) */}
         <Grid>

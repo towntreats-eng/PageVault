@@ -17,6 +17,16 @@ export interface SeoStats {
   hasProducts: boolean;
 }
 
+export interface StoreDiagnosticItem {
+  id: string;
+  resourceTitle: string;
+  resourceType: "product" | "collection" | "page";
+  issueCode: "missing_meta_title" | "missing_meta_desc" | "missing_alt_text" | "uncompressed_image";
+  severity: "critical" | "warning";
+  description: string;
+  fixAction: string;
+}
+
 export async function getSeoSettings(shopDomain: string) {
   let settings = await prisma.seoSetting.findUnique({
     where: { shop_domain: shopDomain },
@@ -174,6 +184,90 @@ export async function getSeoAuditSummary(admin: any, shopDomain: string): Promis
       isAutoOptimized: true,
       hasProducts: false,
     };
+  }
+}
+
+/**
+ * Systematic Store Diagnostic Scanner: Scans GraphQL Admin API and returns itemized list of exact SEO defects
+ */
+export async function getSystematicStoreDiagnostic(admin: any, shopDomain: string): Promise<StoreDiagnosticItem[]> {
+  try {
+    const resJson = await executeShopifyGraphQL(admin, `
+      query {
+        products(first: 50) {
+          edges {
+            node {
+              id
+              title
+              seo {
+                title
+                description
+              }
+              images(first: 5) {
+                edges {
+                  node {
+                    id
+                    altText
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `);
+
+    const products = resJson?.data?.products?.edges || [];
+    const diagnosticItems: StoreDiagnosticItem[] = [];
+
+    for (const edge of products) {
+      const p = edge.node;
+      
+      if (!p.seo?.title) {
+        diagnosticItems.push({
+          id: `${p.id}-title`,
+          resourceTitle: p.title,
+          resourceType: "product",
+          issueCode: "missing_meta_title",
+          severity: "critical",
+          description: `Product "${p.title}" is missing Google search title tag.`,
+          fixAction: `Generate high-CTR title: "${p.title} - Buy Online"`,
+        });
+      }
+
+      if (!p.seo?.description) {
+        diagnosticItems.push({
+          id: `${p.id}-desc`,
+          resourceTitle: p.title,
+          resourceType: "product",
+          issueCode: "missing_meta_desc",
+          severity: "warning",
+          description: `Product "${p.title}" is missing Google meta description.`,
+          fixAction: `Generate search meta description with pricing & free shipping text.`,
+        });
+      }
+
+      const images = p.images?.edges || [];
+      for (const imgEdge of images) {
+        if (!imgEdge.node.altText) {
+          diagnosticItems.push({
+            id: `${imgEdge.node.id}-alt`,
+            resourceTitle: p.title,
+            resourceType: "product",
+            issueCode: "missing_alt_text",
+            severity: "critical",
+            description: `Image on "${p.title}" is missing accessibility ALT text.`,
+            fixAction: `Set ALT tag: "${p.title} - High Quality Product Image"`,
+          });
+          break; // Report once per product to avoid clutter
+        }
+      }
+    }
+
+    return diagnosticItems;
+  } catch (err) {
+    console.error("Systematic diagnostic scan error:", err);
+    return [];
   }
 }
 
