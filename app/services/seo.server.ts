@@ -1,4 +1,5 @@
 import prisma from "../db.server";
+import { executeShopifyGraphQL } from "./graphql.server";
 
 export interface SeoStats {
   healthScore: number;
@@ -103,7 +104,7 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
   let shopName = shopDomain.replace(".myshopify.com", "");
 
   try {
-    const shopResponse = await admin.graphql(`
+    const resJson = await executeShopifyGraphQL(admin, `
       query {
         shop {
           name
@@ -133,8 +134,6 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
         }
       }
     `);
-
-    const resJson = await shopResponse.json();
     if (resJson?.data?.shop?.name) {
       shopName = resJson.data.shop.name;
     }

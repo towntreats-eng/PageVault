@@ -113,3 +113,39 @@ model Event {
   payload     String?
   created_at  DateTime @default(now())
 }
+
+model PageRecord {
+  id              String   @id @default(uuid())
+  shop_domain     String
+  url             String
+  resource_type   String   // product | collection | page | article | home
+  resource_gid    String?
+  status_code     Int      @default(200)
+  last_crawled_at DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  @@unique([shop_domain, url])
+}
+
+model Issue {
+  id             String    @id @default(uuid())
+  shop_domain    String
+  page_record_id String
+  code           String    // missing_title | missing_desc | missing_alt | thin_content | broken_link
+  severity       String    // critical | warning | info
+  detail         String
+  resolved_at    DateTime?
+  created_at     DateTime  @default(now())
+}
+
+model Verification {
+  id             String   @id @default(uuid())
+  shop_domain    String
+  change_id      String
+  result         String   // PASS | FAIL | PENDING
+  reason_code    String?  // THEME_DOES_NOT_READ_METAFIELD | OVERWRITTEN_BY_OTHER_APP | CACHE_PENDING | APP_EMBED_DISABLED | PAGE_UNREACHABLE
+  observed_value String?
+  fetched_url    String
+  attempted_at   DateTime @default(now())
+}
+

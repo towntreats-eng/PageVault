@@ -13,10 +13,11 @@ import {
   List,
   Box,
   Divider,
+  Grid,
 } from "@shopify/polaris";
-import { CheckIcon, StarIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
-import { getSubscriptionStatus, createProSubscription } from "../services/billing.server";
+import { getSubscriptionStatus, createSubscription } from "../services/billing.server";
+import { PLAN_CONFIGS } from "../models/plans";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -27,11 +28,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const planTier = (formData.get("planTier") as "starter_19" | "growth_49" | "pro_129") || "growth_49";
+
   const appUrl = process.env.SHOPIFY_APP_URL || "https://pagevault-production.up.railway.app";
   const returnUrl = `${appUrl}/app/billing/callback?shop=${session.shop}`;
 
   try {
-    const { confirmationUrl } = await createProSubscription(admin, returnUrl, session.shop);
+    const { confirmationUrl } = await createSubscription(admin, returnUrl, session.shop, planTier);
     if (confirmationUrl) {
       return redirect(confirmationUrl);
     }
@@ -39,7 +43,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ error: err.message || "Failed to initiate subscription." });
   }
 
-  return json({ success: true, message: "Subscribed to $29/mo Unlimited SEO Pro Plan!" });
+  return json({ success: true, message: `Activated plan tier: ${planTier}` });
 };
 
 export default function BillingPage() {
@@ -47,14 +51,17 @@ export default function BillingPage() {
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
 
-  const handleSubscribe = () => {
-    submit({}, { method: "post" });
+  const handleSelectPlan = (planTier: string) => {
+    if (planTier === "free") return;
+    submit({ planTier }, { method: "post" });
   };
+
+  const plansList = Object.values(PLAN_CONFIGS);
 
   return (
     <Page
-      title="💳 Pro Subscription & Pricing Plan"
-      subtitle="Simple, transparent pricing for complete store SEO & image optimization."
+      title="💳 Transparent Pricing & Subscription Plans"
+      subtitle="Gate by scale and markets. The Proof Engine & core metadata tools are available on every plan."
     >
       <BlockStack gap="500">
         {actionData?.error && (
@@ -69,58 +76,72 @@ export default function BillingPage() {
           </Banner>
         )}
 
-        <Box padding="600" background="bg-surface-secondary" borderRadius="300">
-          <BlockStack gap="400" align="center">
-            <Badge tone="attention" size="large">⭐ ALL-IN-ONE AUTOMATED PLAN</Badge>
-            <Text as="h1" variant="heading2Xl" alignment="center">
-              Unlimited Auto SEO & Image Compression
-            </Text>
-            <Text as="p" variant="bodyLg" tone="subdued" alignment="center">
-              Everything your Shopify store needs to rank higher on Google and load blazingly fast.
-            </Text>
+        <Grid>
+          {plansList.map((plan) => {
+            const isCurrent = subscription.planTier === plan.tier;
+            const isFeatured = plan.tier === "growth_49";
 
-            <InlineStack gap="100" align="center" blockAlign="baseline">
-              <Text as="span" variant="heading3Xl" fontWeight="bold">$29</Text>
-              <Text as="span" variant="headingLg" tone="subdued">/ month</Text>
-            </InlineStack>
-            <Badge tone="success">7-DAY FREE TRIAL INCLUDED</Badge>
+            return (
+              <Grid.Cell key={plan.tier} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 3, xl: 3 }}>
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text as="h2" variant="headingMd" fontWeight="bold">
+                        {plan.name}
+                      </Text>
+                      {isFeatured && <Badge tone="attention">MOST POPULAR</Badge>}
+                      {isCurrent && <Badge tone="success">ACTIVE</Badge>}
+                    </InlineStack>
 
-            <Button
-              variant="primary"
-              size="large"
-              onClick={handleSubscribe}
-            >
-              {subscription.isActive ? "Active Subscription ($29/mo)" : "Start 7-Day Free Trial ($29/mo)"}
-            </Button>
-          </BlockStack>
-        </Box>
+                    <InlineStack gap="100" blockAlign="baseline">
+                      <Text as="span" variant="heading2Xl" fontWeight="bold">
+                        ${plan.priceUSD}
+                      </Text>
+                      <Text as="span" variant="bodyMd" tone="subdued">
+                        / mo
+                      </Text>
+                    </InlineStack>
 
-        <Card padding="500">
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">What's Included in the $29/month Pro Plan:</Text>
-            <Divider />
-            <List type="bullet">
-              <List.Item>
-                <Text as="span" fontWeight="bold">Unlimited Smart WebP Image Compression:</Text> Compress all product, collection & blog images automatically (saving 60-80% bandwidth).
-              </List.Item>
-              <List.Item>
-                <Text as="span" fontWeight="bold">Automatic Image ALT Text Generator:</Text> Auto-fix missing ALT tags for 100% Google Image search indexability.
-              </List.Item>
-              <List.Item>
-                <Text as="span" fontWeight="bold">Auto Product & Collection Meta Titles/Descriptions:</Text> Define high-CTR templates to eliminate missing meta tags.
-              </List.Item>
-              <List.Item>
-                <Text as="span" fontWeight="bold">Google JSON-LD Rich Snippet Schema Injection:</Text> Enable Product ratings, price badges, and sitelinks searchbox.
-              </List.Item>
-              <List.Item>
-                <Text as="span" fontWeight="bold">404 Broken Link Scanner & Auto Redirects:</Text> Prevent lost traffic with instant redirect rules.
-              </List.Item>
-              <List.Item>
-                <Text as="span" fontWeight="bold">24/7 Priority Support & Daily Auto Scans:</Text> Continuous background monitoring for your store.
-              </List.Item>
-            </List>
-          </BlockStack>
-        </Card>
+                    {plan.trialDays > 0 ? (
+                      <Badge tone="info">{plan.trialDays}-Day Free Trial</Badge>
+                    ) : (
+                      <Badge tone="subdued">Free Forever</Badge>
+                    )}
+
+                    <Divider />
+
+                    <BlockStack gap="200">
+                      <List type="bullet">
+                        {plan.features.map((feat, idx) => (
+                          <List.Item key={idx}>
+                            <Text as="span" variant="bodySm">
+                              {feat}
+                            </Text>
+                          </List.Item>
+                        ))}
+                      </List>
+                    </BlockStack>
+
+                    <Box paddingBefore="400">
+                      <Button
+                        variant={isFeatured ? "primary" : "secondary"}
+                        fullWidth
+                        disabled={isCurrent || plan.tier === "free"}
+                        onClick={() => handleSelectPlan(plan.tier)}
+                      >
+                        {isCurrent
+                          ? "Current Plan"
+                          : plan.tier === "free"
+                          ? "Free Plan"
+                          : `Choose ${plan.name}`}
+                      </Button>
+                    </Box>
+                  </BlockStack>
+                </Card>
+              </Grid.Cell>
+            );
+          })}
+        </Grid>
       </BlockStack>
     </Page>
   );

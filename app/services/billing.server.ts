@@ -1,7 +1,5 @@
 import prisma from "../db.server";
-
-export const PRO_PLAN_PRICE = 29.0;
-export const PRO_PLAN_NAME = "SEO Forge Unlimited Pro";
+import { PLAN_CONFIGS } from "../models/plans";
 
 export async function getSubscriptionStatus(shopDomain: string) {
   const sub = await prisma.subscription.findUnique({
@@ -10,18 +8,22 @@ export async function getSubscriptionStatus(shopDomain: string) {
 
   if (!sub) {
     return {
-      isActive: true, // Default active demo period
-      planName: PRO_PLAN_NAME,
-      price: PRO_PLAN_PRICE,
+      isActive: true,
+      planName: PLAN_CONFIGS.growth_49.name,
+      planTier: PLAN_CONFIGS.growth_49.tier,
+      price: PLAN_CONFIGS.growth_49.priceUSD,
       status: "active",
-      trialDaysRemaining: 7,
+      trialDaysRemaining: 14,
       shopifySubscriptionId: null,
     };
   }
 
+  const matchedPlan = Object.values(PLAN_CONFIGS).find((p) => p.tier === sub.plan_name) || PLAN_CONFIGS.growth_49;
+
   return {
     isActive: sub.status === "active",
-    planName: sub.plan_name,
+    planName: matchedPlan.name,
+    planTier: matchedPlan.tier,
     price: sub.price,
     status: sub.status,
     trialDaysRemaining: sub.trial_days,
@@ -29,7 +31,14 @@ export async function getSubscriptionStatus(shopDomain: string) {
   };
 }
 
-export async function createProSubscription(admin: any, returnUrl: string, shopDomain: string) {
+export async function createSubscription(
+  admin: any,
+  returnUrl: string,
+  shopDomain: string,
+  planTier: "starter_19" | "growth_49" | "pro_129"
+) {
+  const plan = PLAN_CONFIGS[planTier] || PLAN_CONFIGS.growth_49;
+
   const mutation = `
     mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
       appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
@@ -47,7 +56,7 @@ export async function createProSubscription(admin: any, returnUrl: string, shopD
   `;
 
   const variables = {
-    name: PRO_PLAN_NAME,
+    name: plan.name,
     returnUrl,
     test: process.env.NODE_ENV !== "production",
     lineItems: [
@@ -55,7 +64,7 @@ export async function createProSubscription(admin: any, returnUrl: string, shopD
         plan: {
           appRecurringPricingDetails: {
             price: {
-              amount: PRO_PLAN_PRICE,
+              amount: plan.priceUSD,
               currencyCode: "USD",
             },
             interval: "EVERY_30_DAYS",
@@ -85,13 +94,13 @@ export async function createProSubscription(admin: any, returnUrl: string, shopD
   // Fallback confirmation URL or direct activation for dev/test environments
   await prisma.subscription.upsert({
     where: { shop_domain: shopDomain },
-    update: { status: "active", price: PRO_PLAN_PRICE },
+    update: { status: "active", plan_name: plan.tier, price: plan.priceUSD },
     create: {
       shop_domain: shopDomain,
-      plan_name: PRO_PLAN_NAME,
-      price: PRO_PLAN_PRICE,
+      plan_name: plan.tier,
+      price: plan.priceUSD,
       status: "active",
-      trial_days: 7,
+      trial_days: plan.trialDays,
     },
   });
 

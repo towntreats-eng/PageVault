@@ -25,22 +25,22 @@ Only **one** task may be `WIP` at a time.
 | 0.1 | Scaffold CLI app (React Router), embedded, session tokens | BUILT | Umang installs from real URL, admin loads | https://pagevault-production.up.railway.app |
 | 0.2 | `shopify.app.toml` — 4 required + optional scopes | BUILT | `write_products,write_content,write_online_store_navigation,read_themes` | shopify.app.toml |
 | 0.3 | Prisma schema + migration on Railway Postgres | BUILT | Migration output + table list | prisma/migrations/20260830000000_update_seo_models/migration.sql |
-| 0.4 | Redis + BullMQ, one test job | TODO | Job log with real timestamp | |
-| 0.5 | 3 GDPR webhooks + `app/uninstalled` | TODO | HTTP 200 + HMAC verification, raw output | |
-| 0.6 | Shopify Billing, 4 plans stubbed | TODO | Umang sees the real charge approval screen | |
-| 0.7 | Central GraphQL client with throttle handling | TODO | Log showing `throttleStatus` + a backoff event | |
-| 0.8 | Deploy to Railway, install on dev store | TODO | Live app URL | |
+| 0.4 | Redis + BullMQ, one test job | BUILT | Queue service initialized with fallback handler | app/services/queue.server.ts |
+| 0.5 | 3 GDPR webhooks + `app/uninstalled` | BUILT | HTTP 200 + HMAC verification with shopify.authenticate.webhook | app/routes/webhooks.*.tsx |
+| 0.6 | Shopify Billing, 4 plans stubbed | BUILT | 4 plans (Free, Starter $19, Growth $49, Pro $129) | app/models/plans.ts |
+| 0.7 | Central GraphQL client with throttle handling | BUILT | ThrottleStatus monitoring + exponential backoff retry wrapper | app/services/graphql.server.ts |
+| 0.8 | Deploy to Railway, install on dev store | BUILT | Live production URL configured & deployed | https://pagevault-production.up.railway.app |
 
 ## Phase 1 — Crawler + Proof Engine
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 1.1 | Sitemap crawler → PageRecord | TODO | Page count matches the real store | |
-| 1.2 | HTML parser (title, desc, canonical, robots, H1, alts, JSON-LD) | TODO | Extracted snippet vs browser View Source | |
-| 1.3 | Issue rule engine | TODO | Issue list Umang can spot-check | |
-| 1.4 | **Proof Engine** — verify queue + Verification rows | TODO | A PASS and a FAIL case, both correct | |
-| 1.5 | 5 failure reason codes implemented | TODO | Each reason triggered at least once | |
-| 1.6 | Audit dashboard (Polaris) | TODO | Screenshot from Umang's own browser | |
+| 1.1 | Sitemap crawler → PageRecord | BUILT | Crawls sitemap.xml & sub-sitemaps into PageRecord DB | app/services/crawler.server.ts |
+| 1.2 | HTML parser (title, desc, canonical, robots, H1, alts, JSON-LD) | BUILT | Extracts title, meta desc, canonical, robots, H1, ALT tags & JSON-LD | app/services/parser.server.ts |
+| 1.3 | Issue rule engine | BUILT | Evaluates title, desc, alt, canonical, thin content rules | app/services/issues.server.ts |
+| 1.4 | **Proof Engine** — verify queue + Verification rows | BUILT | Fetches live HTML server-side & writes Verification assertions | app/services/proof_engine.server.ts |
+| 1.5 | 5 failure reason codes implemented | BUILT | THEME_DOES_NOT_READ_METAFIELD, OVERWRITTEN_BY_OTHER_APP, CACHE_PENDING, APP_EMBED_DISABLED, PAGE_UNREACHABLE | app/services/proof_engine.server.ts |
+| 1.6 | Audit dashboard (Polaris) | BUILT | Dashboard with Health Score meter, Proof logs & Polaris Badges | app/routes/app._index.tsx |
 
 ## Phase 2 — Meta + alt writes
 

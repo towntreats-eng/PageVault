@@ -101,7 +101,45 @@ CREATE TABLE "Event" (
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- CreateTable
+CREATE TABLE "PageRecord" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "resource_type" TEXT NOT NULL,
+    "resource_gid" TEXT,
+    "status_code" INTEGER NOT NULL DEFAULT 200,
+    "last_crawled_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Issue" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "page_record_id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "severity" TEXT NOT NULL,
+    "detail" TEXT NOT NULL,
+    "resolved_at" DATETIME,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Verification" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "shop_domain" TEXT NOT NULL,
+    "change_id" TEXT NOT NULL,
+    "result" TEXT NOT NULL,
+    "reason_code" TEXT,
+    "observed_value" TEXT,
+    "fetched_url" TEXT NOT NULL,
+    "attempted_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Shop_domain_key" ON "Shop"("domain");
 CREATE UNIQUE INDEX "Subscription_shop_domain_key" ON "Subscription"("shop_domain");
 CREATE UNIQUE INDEX "SeoSetting_shop_domain_key" ON "SeoSetting"("shop_domain");
+CREATE UNIQUE INDEX "PageRecord_shop_domain_url_key" ON "PageRecord"("shop_domain", "url");
+
