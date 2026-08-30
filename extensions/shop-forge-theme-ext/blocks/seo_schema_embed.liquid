@@ -1,0 +1,59 @@
+{% comment %}
+  ProofSEO App Embed Block — Target: head
+  Emits valid JSON-LD structured data schema blocks into storefront <head>.
+  Zero runtime JavaScript, zero tracking scripts, zero bloat.
+  See 06-RULES.md §B6
+{% endcomment %}
+
+{% if request.page_type == 'product' %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": {{ product.title | json }},
+      "description": {{ product.description | strip_html | truncatewords: 50 | json }},
+      "image": [{{ product.featured_image | image_url: width: 1200 | json }}],
+      "sku": {{ product.selected_or_first_available_variant.sku | json }},
+      "offers": {
+        "@type": "Offer",
+        "url": {{ canonical_url | json }},
+        "priceCurrency": {{ cart.currency.iso_code | json }},
+        "price": {{ product.price | money_without_currency | remove: ',' | json }},
+        "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}"
+      }
+    }
+  </script>
+{% elsif request.page_type == 'collection' %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": {{ collection.title | json }},
+      "url": {{ canonical_url | json }}
+    }
+  </script>
+{% elsif request.page_type == 'index' %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": {{ shop.name | json }},
+      "url": {{ shop.url | json }}
+    }
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "ProofSEO JSON-LD Schema",
+  "target": "head",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_json_ld",
+      "label": "Enable Automated JSON-LD Rich Snippets",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

@@ -16,33 +16,35 @@ import {
   Button,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { getSchemaConfig, generateProductJsonLd } from "../services/schema_markup.server";
+import { generateProductJsonLd, detectSchemaConflicts } from "../services/schema_markup.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const config = await getSchemaConfig(session.shop);
+  const targetUrl = `https://${session.shop}/products/sample-product`;
+
+  const conflict = await detectSchemaConflicts(session.shop, targetUrl);
 
   const sampleJsonLd = generateProductJsonLd({
     title: "Luxury Silk Evening Dress",
     description: "Handcrafted pure silk dress with elegant silhouette.",
-    url: `https://${session.shop}/products/silk-evening-dress`,
-    imageUrl: "https://cdn.shopify.com/s/files/1/0000/0001/products/evening_dress.jpg",
+    url: targetUrl,
+    imageUrl: `https://${session.shop}/products/silk-evening-dress.jpg`,
     price: "199.00",
     currency: "USD",
     sku: "SILK-DRS-01",
     inStock: true,
   });
 
-  return json({ config, sampleJsonLd });
+  return json({ conflict, sampleJsonLd, shopDomain: session.shop });
 };
 
 export default function SchemaPage() {
-  const { config, sampleJsonLd } = useLoaderData<typeof loader>();
-  const [productSchema, setProductSchema] = useState(config.productSchema);
-  const [organizationSchema, setOrganizationSchema] = useState(config.organizationSchema);
-  const [websiteSchema, setWebsiteSchema] = useState(config.websiteSchema);
-  const [breadcrumbsSchema, setBreadcrumbsSchema] = useState(config.breadcrumbsSchema);
-  const [faqSchema, setFaqSchema] = useState(config.faqSchema);
+  const { conflict, sampleJsonLd } = useLoaderData<typeof loader>();
+  const [productSchema, setProductSchema] = useState(!conflict.hasConflict);
+  const [organizationSchema, setOrganizationSchema] = useState(true);
+  const [websiteSchema, setWebsiteSchema] = useState(true);
+  const [breadcrumbsSchema, setBreadcrumbsSchema] = useState(true);
+  const [faqSchema, setFaqSchema] = useState(true);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -51,58 +53,72 @@ export default function SchemaPage() {
 
   return (
     <Page
-      title="🏷️ JSON-LD Schema Markup Manager"
-      subtitle="Enable Google Rich Snippets & Structured Data for maximum Google Search visibility."
+      title="🏷️ JSON-LD Schema Markup Manager (Conflict Aware)"
+      subtitle="Theme app extension embed block with zero runtime JS & duplicate schema protection."
       primaryAction={{
         content: "Save Schema Settings",
         onAction: handleSave,
       }}
     >
       <BlockStack gap="500">
+        {conflict.hasConflict && (
+          <Banner title="Duplicate Product Schema Conflict Detected" status="warning">
+            <p>
+              Your active theme or another app already emits <code>Product</code> JSON-LD schema.
+              Per 03-ARCHITECTURE.md §4: ProofSEO Product schema is kept <strong>disabled by default</strong> to prevent Google Search Console duplicate structured data warnings.
+            </p>
+          </Banner>
+        )}
+
         {saved && (
           <Banner title="Schema Markup Settings Saved!" status="success" onDismiss={() => setSaved(false)}>
-            <p>JSON-LD structured data is active and updating automatically across product pages.</p>
+            <p>JSON-LD structured data is rendered via App Embed block with zero storefront JavaScript.</p>
           </Banner>
         )}
 
         <Card padding="500">
           <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">Active Google Rich Snippet Schemas</Text>
+            <InlineStack align="space-between">
+              <Text as="h2" variant="headingMd">Active Google Rich Snippet Schemas</Text>
+              <Badge tone="success">ZERO RUNTIME JS</Badge>
+            </InlineStack>
 
             <Checkbox
-              label="Product Schema (Price, In-Stock Badge & Star Ratings)"
+              label="Product Schema (Offers & Price)"
               checked={productSchema}
               onChange={setProductSchema}
-              helpText="Displays star ratings, price, and in-stock badges directly in Google search results."
+              helpText="Per 06-RULES.md §B3: aggregateRating is ONLY emitted when real review app metafields exist."
             />
 
             <Checkbox
-              label="Organization Schema (Brand Name, Logo & Social Profiles)"
+              label="Organization Schema (Brand Name & Logo)"
               checked={organizationSchema}
               onChange={setOrganizationSchema}
-              helpText="Helps Google Knowledge Graph understand your brand identity."
+              helpText="Helps Google Knowledge Graph understand your store identity."
             />
 
             <Checkbox
               label="WebSite Sitelinks SearchBox Schema"
               checked={websiteSchema}
               onChange={setWebsiteSchema}
-              helpText="Enables a search bar inside your store's Google search listing."
+              helpText="Enables search bar directly inside your store's Google search listing."
             />
 
             <Checkbox
               label="BreadcrumbList Schema"
               checked={breadcrumbsSchema}
               onChange={setBreadcrumbsSchema}
-              helpText="Replaces ugly URLs with clean category breadcrumbs in search listings."
+              helpText="Displays clean category path navigation in Google search results."
             />
 
             <Checkbox
               label="FAQ Schema (Expandable Questions & Answers)"
               checked={faqSchema}
               onChange={setFaqSchema}
-              helpText="Displays rich FAQ dropdowns under your search listings."
+              helpText="Enables rich question dropdowns under search listings."
             />
+
+            <Divider />
 
             <InlineStack align="end">
               <Button variant="primary" onClick={handleSave}>Save Schema Toggles</Button>
@@ -113,11 +129,11 @@ export default function SchemaPage() {
         <Card padding="500">
           <BlockStack gap="300">
             <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">Live Generated JSON-LD Preview</Text>
-              <Badge tone="success">VALIDATED SCHEMA.ORG</Badge>
+              <Text as="h2" variant="headingMd">Live Generated JSON-LD Code</Text>
+              <Badge tone="info">VALIDATED SCHEMA.ORG</Badge>
             </InlineStack>
             <Text as="p" variant="bodySm" tone="subdued">
-              This code is automatically embedded in your store's theme head section via SEO Forge App Embed:
+              Injected via Theme App Extension <code>target: head</code> app embed block:
             </Text>
             <Box padding="400" background="bg-surface-secondary" borderRadius="200">
               <pre style={{ margin: 0, fontSize: "12px", overflowX: "auto" }}>
