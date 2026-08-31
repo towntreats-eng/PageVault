@@ -22,6 +22,9 @@ A Shopify App Store app that fixes a store's SEO **and proves every single chang
 | 08 | `08-APPROVAL-CHECKLIST.md` | Shopify App Store submission readiness |
 | 09 | `09-PRICING-AND-COSTS.md` | Where AI is used, real API costs, unit economics, pricing plans |
 | 10 | `10-KEYWORD-ENGINE.md` | Keyword research, rank tracking, multi-market targeting, white/black-hat rules |
+| 11 | `11-COMPETITOR-PARITY.md` | Full SEOAnt/SEOWILL + TinySEO teardown, feature-by-feature parity verdicts, what we add, what we refuse |
+| 12 | `12-UI-UX-SPEC.md` | Information architecture, core UI patterns, screen-by-screen specs, accessibility, screen acceptance checklist |
+| 13 | `13-CODE-AUDIT.md` | What the shipped code actually does vs what the tracker claimed. Read before trusting any `BUILT` row. |
 | — | `BLOCKERS.md` | Append-only. Every blocker goes here, then STOP. |
 | — | `DECISIONS.md` | Append-only. Every architecture decision + reason. |
 | — | `reference/` | Superseded original brief, kept for context only. Numbered files always win. |
@@ -42,4 +45,4 @@ An agent-written test passing is not proof. A dashboard saying "success" is not 
 
 Phase: **0 — not started**
 Market: **global-first** (USD primary, multi-market keyword engine)
-Last updated: 30 Aug 2026
+Last updated: 31 Aug 2026

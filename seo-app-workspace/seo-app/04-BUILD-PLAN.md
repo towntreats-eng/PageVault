@@ -151,3 +151,37 @@ DoD / Proof: submission confirmation, then the review outcome recorded in the tr
 - **Day 1:** submit the Online Store Protected Scope Exemption Request for `write_themes`. Do not wait for it; it only gates Phase 6B.
 - **Day 1:** register for the reduced revenue share plan ($19 one-time).
 - **Phase 5 onward:** recruit 15–20 beta stores from existing freelance clients — they become the first reviews and the first case studies.
+
+---
+
+## PHASE DELTAS — 31 Aug 2026 (from `11-COMPETITOR-PARITY.md`)
+
+These change the phases above. Read `11-COMPETITOR-PARITY.md` §4 and `12-UI-UX-SPEC.md` before starting any of them.
+
+**Phase 1–2 — add**
+- Build the **Evidence drawer** and the **diff-preview** component as shared components here (`12-UI-UX-SPEC.md` §5.1, §5.2). Every later phase reuses them; no phase builds its own.
+- Every screen must pass the acceptance checklist (`12-UI-UX-SPEC.md` §11) before it is marked done in the tracker.
+
+**Phase 3 — add**
+- Merchant-listing JSON-LD fields on Product: `hasMerchantReturnPolicy`, `shippingDetails`, `priceValidUntil`, `itemCondition`, sourced from the store's real policy and shipping settings. Omit any field whose data does not exist — never invent one.
+- Structured-data counters on screen must be **verified** counts (schema observed on the live page), not "enabled" counts.
+
+**Phase 4 — add**
+- Smart 301 target suggestion for 404s (handle + title similarity against live URLs). Blanket homepage redirect is an explicit last-resort choice, never the default.
+- OPEN: HTML sitemap page — decide feasibility (theme template vs app proxy route) and record it in `DECISIONS.md`.
+
+**Phase 5 — add**
+- **Site Verification** screen: Google Search Console + Bing Webmaster verification meta tags.
+- **IndexNow**: key file plus submission on every URL create/update/delete, with a submission log.
+
+**NEW PHASE 5.5 — Content Engine**
+Deliverables: Content Planner (seed keyword → real keyword pull → topic clusters with volume, difficulty, intent split and winnability); Blog Generator single + bulk, every draft carrying its source cluster and target keyword; drafts written to Shopify as **unpublished** articles; auto-publish off by default and re-confirmed every 90 days; content-refresh queue for articles that lost position; per-shop AI budget cap enforced with a hard stop.
+DoD / Proof: Umang generates a draft from a real cluster, opens it in the Shopify admin blog as an unpublished article, and the draft names the exact keywords it targeted. A budget-cap hit is demonstrated stopping generation cleanly.
+
+**NEW PHASE 6C — Off-page (Backlink Audit)**
+Deliverables: backlink profile and referring domains, authority metric, anchor-text distribution, toxic-link flags with an exportable disavow-ready list (we never submit it), competitor backlink gap per market, unlinked brand-mention finder with outreach targets.
+Explicitly **not** built: link exchange, swap marketplace, automated link placement. See `DECISIONS.md` 2026-08-31.
+DoD / Proof: a real backlink report for a real domain, cross-checkable by Umang against a third-party tool.
+
+**Removed from scope**
+- No speed module of any kind — no image compression, minification, preloading, app-script control or Turbo/Rocket modes. See `DECISIONS.md` 2026-08-31.
