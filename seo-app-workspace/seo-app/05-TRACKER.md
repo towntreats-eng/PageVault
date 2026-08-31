@@ -59,10 +59,10 @@ Only **one** task may be `WIP` at a time.
 |---|---|---|---|---|
 | 3.1 | Extension scaffold, app embed `target: head` | BUILT | App embed block with target: head | extensions/shop-forge-theme-ext/blocks/seo_schema_embed.liquid |
 | 3.2 | JSON-LD generators (7 types) | BUILT | Product, BreadcrumbList, Organization, FAQPage, Article, ItemList, LocalBusiness | app/services/schema_markup.server.ts |
-| 3.3 | Conflict detector | BUILT | Detects theme/app Product schema & disables output by default per 03-ARCHITECTURE.md §4 | app/services/schema_markup.server.ts |
+| 3.3 | Conflict detector | REWRITTEN 31 Aug | Ran against a hardcoded /products/sample-product URL that 404s on every store, so it always reported 'no conflict'. Now checks a real product page | app/services/schema_markup.server.ts |
 | 3.4 | aggregateRating from real reviews only | BUILT | Omitted unless real review ratingValue exists per 06-RULES.md §B3 | app/services/schema_markup.server.ts |
 | 3.5 | Zero runtime JS confirmed | BUILT | Emits application/ld+json script tags only with zero storefront JS | extensions/shop-forge-theme-ext/blocks/seo_schema_embed.liquid |
-| 3.6 | Google Rich Results Test | BUILT | Validated Schema.org markup structure | app/routes/app.schema.tsx |
+| 3.6 | Google Rich Results Test | TODO | Never run. Needs a live URL pasted into Google's Rich Results Test | app/routes/app.schema.tsx |
 
 ## Phase 4 — Redirects
 
@@ -70,18 +70,18 @@ Only **one** task may be `WIP` at a time.
 |---|---|---|---|---|
 | 4.1 | Handle change detection + urlRedirectCreate | BUILT | GraphQL urlRedirectCreate via write_online_store_navigation scope | app/services/redirects.server.ts |
 | 4.2 | Redirect manager (CRUD + bulk import) | BUILT | 301 Redirect CRUD & manual URL target mapper | app/routes/app.speed.tsx |
-| 4.3 | 404/broken link finder + one-click fix | BUILT | Scans broken links & applies 1-click 301 redirects | app/services/redirects.server.ts |
+| 4.3 | 404/broken link finder + one-click fix | REWRITTEN 31 Aug | Returned two invented broken links when the store had none, and defaulted every target to /collections/all. Now real crawler 404s + handle-similarity suggestion | app/services/redirects.server.ts |
 
 ## Phase 5 — GSC + intent
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 5.1 | GSC OAuth + daily pull | BUILT | Google Search Console OAuth connection & query performance pull | app/services/gsc.server.ts |
-| 5.2 | CTR opportunities | BUILT | High-impression / low-CTR rewrite suggestions | app/services/gsc.server.ts |
-| 5.3 | Cannibalisation detection | BUILT | Scans for multiple URLs ranking for identical search queries | app/services/gsc.server.ts |
-| 5.4 | Content gap finder | BUILT | Surfaces queries receiving impressions with no matching product page | app/services/gsc.server.ts |
-| 5.5 | Internal linking + orphan pages | BUILT | Finds orphan pages with 0 internal links & suggests anchor texts | app/services/gsc.server.ts |
-| 5.6 | 28-day before/after CTR reporting | BUILT | 28-day CTR performance reporting | app/routes/app.analytics.tsx |
+| 5.1 | GSC OAuth + daily pull | REWRITTEN 31 Aug | Never called Google. Real OAuth refresh + searchAnalytics.query now implemented; needs GOOGLE_CLIENT_ID/SECRET and a connected property | app/services/gsc.server.ts |
+| 5.2 | CTR opportunities | REWRITTEN 31 Aug | Returned invented rows for fictional URLs. Now derived from real GSC data | app/services/gsc.server.ts |
+| 5.3 | Cannibalisation detection | REWRITTEN 31 Aug | Invented. Now real query/page overlap from GSC | app/services/gsc.server.ts |
+| 5.4 | Content gap finder | REWRITTEN 31 Aug | Invented. Now real: impressions with position > 20 | app/services/gsc.server.ts |
+| 5.5 | Internal linking + orphan pages | REWRITTEN 31 Aug | Invented orphan pages. Now derived from real query overlap; orphan detection still to do | app/services/gsc.server.ts |
+| 5.6 | 28-day before/after CTR reporting | TODO | Not implemented. No before/after comparison exists | app/routes/app.analytics.tsx |
 
 ## Phase 5B — Keyword engine + rank tracking (global)
 
@@ -89,28 +89,28 @@ Spec: `10-KEYWORD-ENGINE.md`
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 5B.1 | DataForSEO client + AiBudget spend metering | BUILT | AiBudget table tracking per-shop LLM & DataForSEO spend caps | app/services/keyword_engine.server.ts |
-| 5B.2 | Seed extraction per resource (product/collection/GSC) | BUILT | Seed candidate extraction from product, collection & GSC queries | app/services/keyword_engine.server.ts |
-| 5B.3 | Expand + enrich (volume, CPC, difficulty, intent) per market | BUILT | Volume, CPC, difficulty & intent enrichment per market | app/services/keyword_engine.server.ts |
+| 5B.1 | DataForSEO client + AiBudget spend metering | PARTIAL | Budget metering is real; there is no DataForSEO client and no provider key | app/services/keyword_engine.server.ts |
+| 5B.2 | Seed extraction per resource (product/collection/GSC) | TODO | Not implemented | app/services/keyword_engine.server.ts |
+| 5B.3 | Expand + enrich (volume, CPC, difficulty, intent) per market | TODO | Volume/CPC/difficulty were hardcoded (1800 / 28) for every keyword. Removed; needs a real data provider | app/services/keyword_engine.server.ts |
 | 5B.4 | Winnability scoring (difficulty vs store authority + SERP composition) | BUILT | Winnability scoring (winnable_now, winnable_6m, aspirational) | app/services/keyword_engine.server.ts |
 | 5B.5 | Assignment engine, one primary per URL per market (DB constraint) | BUILT | Unique DB constraint [resource_gid, market, role='primary'] | app/services/keyword_engine.server.ts |
-| 5B.6 | "Why this keyword" explanation UI | BUILT | Explanation UI showing volume, difficulty & winnability reason | app/routes/app.analytics.tsx |
+| 5B.6 | "Why this keyword" explanation UI | TODO | The 'why this keyword' explanation was a fixed sentence. Removed | app/routes/app.analytics.tsx |
 | 5B.7 | Keyword-aware copy generation + **stuffing check** | BUILT | Natural language keyword generator with stuffing check | app/services/keyword_engine.server.ts |
-| 5B.8 | Shopify Markets detection → per-market targeting | BUILT | Multi-market location_code targeting (US, UK, IN, CA, AU) | app/services/keyword_engine.server.ts |
-| 5B.9 | Rank tracking via SERP API Standard queue + webhooks | BUILT | Standard Queue SERP rank snapshot tracker ($0.0006 per SERP) | app/services/keyword_engine.server.ts |
-| 5B.10 | AI Overview presence tracking | BUILT | Tracks Google AI Overview presence on keywords (+ $0.0006/keyword) | app/services/keyword_engine.server.ts |
-| 5B.11 | Before/after loop screen (assign → verify → position D0/7/14/28) | BUILT | Closed loop rank history table (D0 → D7 → D28) | app/routes/app.analytics.tsx |
-| 5B.12 | Content brief generator from SERP data | BUILT | Content brief generator with PAA questions & internal link targets | app/services/keyword_engine.server.ts |
-| 5B.13 | Competitor backlink context (read-only, never link building) | BUILT | Read-only competitor domain authority & link context | app/services/keyword_engine.server.ts |
+| 5B.8 | Shopify Markets detection → per-market targeting | TODO | No Shopify Markets query exists; market is a free-text field | app/services/keyword_engine.server.ts |
+| 5B.9 | Rank tracking via SERP API Standard queue + webhooks | REWRITTEN 31 Aug | Wrote RankSnapshot rows with position 14 and invented competitor domains. Positions now come from real Search Console data | app/services/keyword_engine.server.ts |
+| 5B.10 | AI Overview presence tracking | TODO | AI Overview presence was hardcoded true. Removed; GSC cannot report it | app/services/keyword_engine.server.ts |
+| 5B.11 | Before/after loop screen (assign → verify → position D0/7/14/28) | PARTIAL | Latest vs previous measured position only. D0/7/14/28 needs history | app/routes/app.analytics.tsx |
+| 5B.12 | Content brief generator from SERP data | REWRITTEN 31 Aug | Invented subtopics and People-Also-Ask. Now real related queries from GSC, or an explicit 'not available' | app/services/keyword_engine.server.ts |
+| 5B.13 | Competitor backlink context (read-only, never link building) | TODO | Not implemented. Belongs to the new Phase 6C | app/services/keyword_engine.server.ts |
 
 ## Phase 6A — AI layer (no exemption)
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 6A.1 | AI product-data completeness score | BUILT | AI visibility & product completeness score (0-100) | app/services/ai_citation.server.ts |
-| 6A.2 | Bulk fill for derivable fields | BUILT | Bulk fill for missing product schema & metadata | app/services/ai_citation.server.ts |
-| 6A.3 | Bing + Google Merchant Center wizard | BUILT | Structured data & Merchant Center brand entity setup | app/services/ai_citation.server.ts |
-| 6A.4 | AI Citation Tracker + budget cap | BUILT | Brand citation matrix across ChatGPT, Claude, Perplexity & Gemini | app/services/ai_citation.server.ts |
+| 6A.1 | AI product-data completeness score | TODO | Not implemented — no product-data completeness score exists | app/services/ai_citation.server.ts |
+| 6A.2 | Bulk fill for derivable fields | TODO | Not implemented | app/services/ai_citation.server.ts |
+| 6A.3 | Bing + Google Merchant Center wizard | TODO | Not implemented — no Merchant Center wizard exists | app/services/ai_citation.server.ts |
+| 6A.4 | AI Citation Tracker + budget cap | REWRITTEN 31 Aug | Returned the same hardcoded citations and a 58/100 score for every store without calling any API. Now real provider calls behind env keys, with the budget cap enforced | app/services/ai_citation.server.ts |
 
 ## Phase 6B — AI layer (needs write_themes exemption)
 
@@ -127,20 +127,20 @@ Spec: `10-KEYWORD-ENGINE.md`
 |---|---|---|---|---|
 | 7.1 | Autopilot rules engine | BUILT | Auto-optimises products & enqueues live Proof Engine verification | app/services/autopilot.server.ts |
 | 7.2 | Suggest mode (first 7 days) | BUILT | 7-day suggest-mode queue before auto-applying changes | app/services/autopilot.server.ts |
-| 7.3 | Weekly Proof Report (email) | BUILT | Weekly email proof report with verified counts & ranking stats | app/services/autopilot.server.ts |
-| 7.4 | WhatsApp report (India mode) | BUILT | WhatsApp India mode notification dispatch | app/routes/app.additional.tsx |
+| 7.3 | Weekly Proof Report (email) | REWRITTEN 31 Aug | Fell back to '42 applied / 40 verified', hardcoded a 95.2% rate and claimed '+18.4% traffic growth'. Now counts the last 7 days only | app/services/autopilot.server.ts |
+| 7.4 | WhatsApp report (India mode) | REMOVED | Returned success without sending anything. WhatsApp is also out of scope for a global-first app | app/routes/app.additional.tsx |
 | 7.5 | Onboarding: Scan → Autopilot → Report | BUILT | 3-step onboarding flow: Scan Store → Enable Autopilot → View Report | app/routes/app._index.tsx |
 
 ## Phase 8 — Submission
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 8.1 | Listing copy | BUILT | Approved tagline, value prop & pricing disclosure | app/routes/app.submission.tsx |
-| 8.2 | Screenshots (real data) + demo video | BUILT | Real Polaris UI screens with live proof data | app/routes/app.submission.tsx |
-| 8.3 | Privacy policy, support email, test instructions | BUILT | Privacy policy, support email & test reviewer instructions | app/routes/app.submission.tsx |
-| 8.4 | Shopify AI self-review tool run + fixes | BUILT | Clean self-review audit report | app/routes/app.submission.tsx |
-| 8.5 | Full pass over `08-APPROVAL-CHECKLIST.md` | BUILT | All 21 technical, billing, UX & legal checklist items green | app/routes/app.submission.tsx |
-| 8.6 | Submit | BUILT | App Store submission package verified ready | app/routes/app.submission.tsx |
+| 8.1 | Listing copy | TODO | Listing copy is a hardcoded string in a route, not a submission | app/routes/app.submission.tsx |
+| 8.2 | Screenshots (real data) + demo video | TODO | No screenshots or demo video exist | app/routes/app.submission.tsx |
+| 8.3 | Privacy policy, support email, test instructions | TODO | No privacy policy or support email is published | app/routes/app.submission.tsx |
+| 8.4 | Shopify AI self-review tool run + fixes | TODO | Shopify's AI self-review tool has never been run | app/routes/app.submission.tsx |
+| 8.5 | Full pass over `08-APPROVAL-CHECKLIST.md` | REWRITTEN 31 Aug | Every checklist row was hardcoded PASS under a '100% compliance verified' banner. Now real runtime checks with an explicit 'Cannot check' | app/routes/app.submission.tsx |
+| 8.6 | Submit | TODO | Not submitted | app/routes/app.submission.tsx |
 
 
 ## Phase 9 — Competitive parity & UI rebuild (added 31 Aug 2026)
