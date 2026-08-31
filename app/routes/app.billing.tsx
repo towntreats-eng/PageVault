@@ -64,14 +64,14 @@ export default function BillingPage() {
       subtitle="Gate by scale and markets. The Proof Engine & core metadata tools are available on every plan."
     >
       <BlockStack gap="500">
-        {actionData?.error && (
-          <Banner title="Billing Error" status="critical">
-            <p>{actionData.error}</p>
+        {actionData && "error" in actionData && actionData.error && (
+          <Banner title="Billing Error" tone="critical">
+            <p>{String(actionData.error)}</p>
           </Banner>
         )}
 
-        {actionData?.message && (
-          <Banner title="Plan Activated" status="success">
+        {actionData && "message" in actionData && actionData.message && (
+          <Banner title="Plan Activated" tone="success">
             <p>{actionData.message}</p>
           </Banner>
         )}
@@ -94,7 +94,7 @@ export default function BillingPage() {
                     </InlineStack>
 
                     <InlineStack gap="100" blockAlign="baseline">
-                      <Text as="span" variant="heading2Xl" fontWeight="bold">
+                      <Text as="span" variant="heading2xl" fontWeight="bold">
                         ${plan.priceUSD}
                       </Text>
                       <Text as="span" variant="bodyMd" tone="subdued">
@@ -103,9 +103,9 @@ export default function BillingPage() {
                     </InlineStack>
 
                     {plan.trialDays > 0 ? (
-                      <Badge tone="info">{plan.trialDays}-Day Free Trial</Badge>
+                      <Badge tone="info">{`${plan.trialDays}-Day Free Trial`}</Badge>
                     ) : (
-                      <Badge tone="subdued">Free Forever</Badge>
+                      <Badge>Free Forever</Badge>
                     )}
 
                     <Divider />
@@ -122,7 +122,7 @@ export default function BillingPage() {
                       </List>
                     </BlockStack>
 
-                    <Box paddingBefore="400">
+                    <Box paddingBlockStart="400">
                       <Button
                         variant={isFeatured ? "primary" : "secondary"}
                         fullWidth

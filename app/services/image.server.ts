@@ -1,210 +1,189 @@
 import prisma from "../db.server";
 import { executeShopifyGraphQL } from "./graphql.server";
+import { updateProductImageAltText } from "./meta_writer.server";
 
-export interface ImageOptimizationResult {
-  id: string;
+/**
+ * Image ALT TEXT only.
+ *
+ * This app does not compress images and never claims to. Shopify serves product
+ * media from its own CDN; an app cannot shrink those files without re-uploading
+ * new media, and we deliberately do not do that (see DECISIONS.md, 31 Aug 2026).
+ *
+ * The previous implementation of this file wrote fabricated "1.85MB -> 0.42MB"
+ * rows into the database and reported invented megabytes saved. That has been removed.
+ */
+
+export interface ProductImageRow {
   productId: string;
   productTitle: string;
-  imageUrl: string;
-  originalSizeBytes: number;
-  compressedSizeBytes: number;
-  savingsPercentage: number;
-  altText: string;
-  status: "compressed" | "optimized";
+  mediaId: string;
+  imageUrl: string | null;
+  altText: string | null;
+  handle: string;
 }
 
-export async function getImageOptStats(admin: any, shopDomain: string) {
-  const logs = await prisma.imageOptLog.findMany({
-    where: { shop_domain: shopDomain },
-    take: 50,
-    orderBy: { created_at: "desc" },
-  });
+const PAGE_SIZE = 100;
 
-  if (logs.length > 0) {
-    const images: ImageOptimizationResult[] = logs.map((log) => {
-      const savings = log.original_size - log.compressed_size;
-      const pct = log.original_size > 0 ? Math.round((savings / log.original_size) * 100) : 75;
-      return {
-        id: log.id,
-        productId: log.product_id,
-        productTitle: log.alt_text?.split(" - ")[0] || "Store Product",
-        imageUrl: log.image_url,
-        originalSizeBytes: log.original_size,
-        compressedSizeBytes: log.compressed_size,
-        savingsPercentage: pct,
-        altText: log.alt_text || "Product Image",
-        status: "compressed",
-      };
-    });
+/** Reads EVERY product, not the first page. A partial read would understate the problem. */
+export async function listProductImages(admin: any, maxProducts = 1000): Promise<ProductImageRow[]> {
+  const rows: ProductImageRow[] = [];
+  let cursor: string | null = null;
+  let fetched = 0;
 
-    const totalBytesSaved = logs.reduce((acc, l) => acc + (l.original_size - l.compressed_size), 0);
-
-    return {
-      images,
-      totalScanned: logs.length,
-      totalCompressed: logs.length,
-      totalSavingsMb: Number((totalBytesSaved / (1024 * 1024)).toFixed(1)),
-      avgSavingsPercent: 75,
-      altTextsFixed: logs.filter((l) => Boolean(l.alt_text)).length,
-      hasImages: true,
-    };
-  }
-
-  // Live GraphQL Catalog Image Query (No Hardcoded Fake Data)
-  try {
-    const resJson = await executeShopifyGraphQL(admin, `
-      query {
-        products(first: 50) {
+  while (fetched < maxProducts) {
+    const res: any = await executeShopifyGraphQL(
+      admin,
+      `query productImages($first: Int!, $after: String) {
+        products(first: $first, after: $after) {
+          pageInfo { hasNextPage endCursor }
           edges {
             node {
               id
               title
-              images(first: 5) {
+              handle
+              media(first: 20) {
                 edges {
                   node {
-                    id
-                    url
-                    altText
+                    ... on MediaImage {
+                      id
+                      alt
+                      image { url }
+                    }
                   }
                 }
               }
             }
           }
         }
-      }
-    `);
+      }`,
+      { first: PAGE_SIZE, after: cursor }
+    );
 
-    const products = resJson?.data?.products?.edges || [];
-    const liveImages: ImageOptimizationResult[] = [];
-    let scannedCount = 0;
-    let altsFixed = 0;
+    const conn = res?.data?.products;
+    if (!conn) break;
 
-    for (const pEdge of products) {
-      const p = pEdge.node;
-      const images = p.images?.edges || [];
-      scannedCount += images.length;
-
-      for (const imgEdge of images) {
-        const img = imgEdge.node;
-        if (img.altText) altsFixed++;
-
-        liveImages.push({
-          id: img.id,
+    for (const edge of conn.edges || []) {
+      const p = edge.node;
+      fetched++;
+      for (const m of p.media?.edges || []) {
+        const node = m.node;
+        if (!node?.id) continue;
+        rows.push({
           productId: p.id,
           productTitle: p.title,
-          imageUrl: img.url,
-          originalSizeBytes: 1850000,
-          compressedSizeBytes: 420000,
-          savingsPercentage: 77,
-          altText: img.altText || `${p.title} - ${shopDomain.replace('.myshopify.com', '')}`,
-          status: "compressed",
+          handle: p.handle,
+          mediaId: node.id,
+          imageUrl: node.image?.url ?? null,
+          altText: node.alt ?? null,
         });
       }
     }
 
-    if (liveImages.length === 0) {
-      return {
-        images: [],
-        totalScanned: 0,
-        totalCompressed: 0,
-        totalSavingsMb: 0,
-        avgSavingsPercent: 0,
-        altTextsFixed: 0,
-        hasImages: false,
-      };
-    }
+    if (!conn.pageInfo?.hasNextPage) break;
+    cursor = conn.pageInfo.endCursor;
+  }
 
+  return rows;
+}
+
+export interface AltTextCoverage {
+  available: boolean;
+  totalImages: number;
+  withAlt: number;
+  missingAlt: number;
+  coveragePercent: number | null;
+  productsScanned: number;
+  rows: ProductImageRow[];
+  error?: string;
+}
+
+export async function getAltTextCoverage(admin: any, _shopDomain: string): Promise<AltTextCoverage> {
+  try {
+    const rows = await listProductImages(admin);
+    const withAlt = rows.filter((r) => (r.altText || "").trim().length > 0).length;
+    const totalImages = rows.length;
     return {
-      images: liveImages,
-      totalScanned: scannedCount,
-      totalCompressed: scannedCount,
-      totalSavingsMb: Number(((scannedCount * 1.4)).toFixed(1)),
-      avgSavingsPercent: 75,
-      altTextsFixed: altsFixed,
-      hasImages: true,
+      available: true,
+      totalImages,
+      withAlt,
+      missingAlt: totalImages - withAlt,
+      coveragePercent: totalImages === 0 ? null : Math.round((withAlt / totalImages) * 100),
+      productsScanned: new Set(rows.map((r) => r.productId)).size,
+      rows,
     };
   } catch (err) {
-    console.error("Image stats live GraphQL error:", err);
+    // An API failure is reported as a failure. It is never rendered as a healthy store.
     return {
-      images: [],
-      totalScanned: 0,
-      totalCompressed: 0,
-      totalSavingsMb: 0,
-      avgSavingsPercent: 0,
-      altTextsFixed: 0,
-      hasImages: false,
+      available: false,
+      totalImages: 0,
+      withAlt: 0,
+      missingAlt: 0,
+      coveragePercent: null,
+      productsScanned: 0,
+      rows: [],
+      error: (err as Error).message,
     };
   }
 }
 
-export async function compressAllProductImages(admin: any, shopDomain: string) {
-  try {
-    const productsRes = await executeShopifyGraphQL(admin, `
-      query {
-        products(first: 50) {
-          edges {
-            node {
-              id
-              title
-              images(first: 5) {
-                edges {
-                  node {
-                    id
-                    url
-                    altText
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `);
+/** Suggests alt text from real product context. No keyword stuffing, no invented claims. */
+export function suggestAltText(productTitle: string, index: number, shopName: string) {
+  const base = `${productTitle} — ${shopName}`;
+  return index === 0 ? base : `${productTitle}, view ${index + 1} — ${shopName}`;
+}
 
-    const products = productsRes?.data?.products?.edges || [];
-    let count = 0;
-    let totalOriginalBytes = 0;
-    let totalCompressedBytes = 0;
+export interface BulkAltResult {
+  attempted: number;
+  written: number;
+  skippedHumanValue: number;
+  failed: { mediaId: string; message: string }[];
+}
 
-    for (const edge of products) {
-      const p = edge.node;
-      for (const imgEdge of p.images.edges) {
-        const img = imgEdge.node;
-        const origSize = 1850000;
-        const compSize = 420000;
-        const generatedAlt = img.altText || `${p.title} - ${shopDomain.replace('.myshopify.com', '')}`;
+/**
+ * Fills ONLY empty alt text. A value a human wrote is never overwritten.
+ * Every successful write schedules a live-page verification inside updateProductImageAltText.
+ */
+export async function fillMissingAltText(
+  admin: any,
+  shopDomain: string,
+  shopName: string,
+  limit = 50
+): Promise<BulkAltResult> {
+  const rows = await listProductImages(admin);
+  const result: BulkAltResult = { attempted: 0, written: 0, skippedHumanValue: 0, failed: [] };
 
-        totalOriginalBytes += origSize;
-        totalCompressedBytes += compSize;
-        count++;
+  const perProductIndex = new Map<string, number>();
 
-        await prisma.imageOptLog.create({
-          data: {
-            shop_domain: shopDomain,
-            product_id: p.id,
-            image_url: img.url,
-            original_size: origSize,
-            compressed_size: compSize,
-            alt_text: generatedAlt,
-            status: "compressed",
-          },
-        });
-      }
+  for (const row of rows) {
+    const idx = perProductIndex.get(row.productId) ?? 0;
+    perProductIndex.set(row.productId, idx + 1);
+
+    if ((row.altText || "").trim().length > 0) {
+      result.skippedHumanValue++;
+      continue;
     }
+    if (result.attempted >= limit) break;
 
-    const savedMb = Number(((totalOriginalBytes - totalCompressedBytes) / (1024 * 1024)).toFixed(1));
+    result.attempted++;
+    const alt = suggestAltText(row.productTitle, idx, shopName);
+    const targetUrl = `https://${shopDomain}/products/${row.handle}`;
 
-    return {
-      success: true,
-      imagesProcessed: count,
-      mbSaved: savedMb || 0,
-    };
-  } catch (err) {
-    console.error("Image compression error:", err);
-    return {
-      success: true,
-      imagesProcessed: 0,
-      mbSaved: 0,
-    };
+    try {
+      await updateProductImageAltText(admin, shopDomain, row.productId, row.mediaId, alt, targetUrl);
+      result.written++;
+    } catch (err) {
+      result.failed.push({ mediaId: row.mediaId, message: (err as Error).message });
+    }
   }
+
+  return result;
+}
+
+/** History of alt-text writes we actually made. */
+export async function getAltTextHistory(shopDomain: string) {
+  return prisma.change.findMany({
+    where: { shop_domain: shopDomain, field: "alt" },
+    orderBy: { applied_at: "desc" },
+    take: 50,
+  });
 }

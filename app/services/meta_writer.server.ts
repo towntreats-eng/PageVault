@@ -1,6 +1,6 @@
 import prisma from "../db.server";
 import { executeShopifyGraphQL } from "./graphql.server";
-import { verifyAppliedSeoChangeOnLivePage } from "./proof_engine.server";
+import { scheduleVerification } from "./proof_engine.server";
 import { renderMetaTemplate, type TemplateVariables } from "../utils/template";
 
 export { renderMetaTemplate, type TemplateVariables };
@@ -109,8 +109,9 @@ export async function writeResourceSeoMetafield(
     },
   });
 
-  // Task 2.5: Auto-enqueue Proof Engine live-page verification assertion
-  const proofResult = await verifyAppliedSeoChangeOnLivePage(
+  // Verification runs after a CDN delay, never inline: fetching the live page
+  // milliseconds after the write would report a false failure.
+  const job = await scheduleVerification(
     shopDomain,
     changeRecord.id,
     targetUrl,
@@ -122,12 +123,20 @@ export async function writeResourceSeoMetafield(
     success: true,
     changeId: changeRecord.id,
     newValue,
-    proofResult,
+    // "Applied" is the strongest claim allowed until the live page says otherwise.
+    status: "Applied" as const,
+    verification: {
+      scheduled: job.scheduled,
+      durable: job.durable,
+      runsAt: job.runsAt,
+    },
   };
 }
 
 /**
- * Task 2.3 - Writes Product Media ALT Text via GraphQL Admin API
+ * Writes media ALT text via fileUpdate.
+ * productUpdateMedia is deprecated (and reports failures in mediaUserErrors, which
+ * the old implementation never read, so failed writes looked like successes).
  */
 export async function updateProductImageAltText(
   admin: any,
@@ -138,23 +147,24 @@ export async function updateProductImageAltText(
   targetUrl: string
 ) {
   const mutation = `
-    mutation productUpdateMedia($media: [UpdateMediaInput!]!, $productId: ID!) {
-      productUpdateMedia(media: $media, productId: $productId) {
-        media {
+    mutation fileUpdate($files: [FileUpdateInput!]!) {
+      fileUpdate(files: $files) {
+        files {
           id
           alt
+          fileStatus
         }
         userErrors {
           field
           message
+          code
         }
       }
     }
   `;
 
   const variables = {
-    productId,
-    media: [
+    files: [
       {
         id: mediaId,
         alt: newAltText,
@@ -163,10 +173,10 @@ export async function updateProductImageAltText(
   };
 
   const responseJson = await executeShopifyGraphQL(admin, mutation, variables);
-  const errors = responseJson?.data?.productUpdateMedia?.userErrors;
+  const errors = responseJson?.data?.fileUpdate?.userErrors;
 
   if (errors && errors.length > 0) {
-    throw new Error(`productUpdateMedia error: ${errors[0].message}`);
+    throw new Error(`fileUpdate error: ${errors[0].message}`);
   }
 
   const changeRecord = await prisma.change.create({
@@ -179,7 +189,7 @@ export async function updateProductImageAltText(
     },
   });
 
-  const proofResult = await verifyAppliedSeoChangeOnLivePage(
+  const job = await scheduleVerification(
     shopDomain,
     changeRecord.id,
     targetUrl,
@@ -191,7 +201,12 @@ export async function updateProductImageAltText(
     success: true,
     changeId: changeRecord.id,
     newAltText,
-    proofResult,
+    status: "Applied" as const,
+    verification: {
+      scheduled: job.scheduled,
+      durable: job.durable,
+      runsAt: job.runsAt,
+    },
   };
 }
 

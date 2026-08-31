@@ -7,6 +7,7 @@ import {
   Text,
   Badge,
   BlockStack,
+  Box,
   InlineStack,
   IndexTable,
   Banner,
@@ -69,21 +70,21 @@ export default function KeywordAnalyticsPage() {
         <Text as="span" fontWeight="bold">{kw.term}</Text>
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Badge tone="info">{kw.market}</Badge>
+        <Badge tone="info">{`${kw.market}`}</Badge>
       </IndexTable.Cell>
       <IndexTable.Cell>
         <Text as="span">{kw.volume.toLocaleString()} / mo</Text>
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Badge tone={kw.difficulty <= 35 ? "success" : "warning"}>{kw.difficulty}/100 ({kw.winnability})</Badge>
+        <Badge tone={kw.difficulty <= 35 ? "success" : "warning"}>{`${kw.difficulty}/100 ({kw.winnability})`}</Badge>
       </IndexTable.Cell>
 
       {/* Closed loop rank history: D0 -> D7 -> D28 */}
       <IndexTable.Cell>
         <InlineStack gap="100">
-          <Badge tone="subdued">D0: #{kw.positionD0}</Badge>
-          <Badge tone="info">D7: #{kw.positionD7}</Badge>
-          <Badge tone="success">D28: #{kw.positionD28}</Badge>
+          <Badge>{`D0: #${kw.positionD0}`}</Badge>
+          <Badge tone="info">{`D7: #${kw.positionD7}`}</Badge>
+          <Badge tone="success">{`D28: #${kw.positionD28}`}</Badge>
         </InlineStack>
       </IndexTable.Cell>
 
@@ -91,7 +92,7 @@ export default function KeywordAnalyticsPage() {
         {kw.aiOverviewPresent ? (
           <Badge tone="attention">Google AI Overview Active</Badge>
         ) : (
-          <Badge tone="subdued">Organic Only</Badge>
+          <Badge>Organic Only</Badge>
         )}
       </IndexTable.Cell>
     </IndexTable.Row>
@@ -104,11 +105,11 @@ export default function KeywordAnalyticsPage() {
     >
       <BlockStack gap="500">
         {!gscStatus.isConnected ? (
-          <Banner title="Google Search Console Disconnected" status="info">
+          <Banner title="Google Search Console Disconnected" tone="info">
             <p>Connect GSC OAuth to pull real click, impression, CTR, and average position search data directly from Google.</p>
           </Banner>
         ) : (
-          <Banner title="Google Search Console Connected" status="success">
+          <Banner title="Google Search Console Connected" tone="success">
             <p>Connected property: <strong>{gscStatus.siteUrl}</strong>.</p>
           </Banner>
         )}
@@ -139,7 +140,7 @@ export default function KeywordAnalyticsPage() {
                 <IndexTable.Row id={opp.query} key={idx} position={idx}>
                   <IndexTable.Cell><Text as="span" fontWeight="bold">{opp.query}</Text></IndexTable.Cell>
                   <IndexTable.Cell>{opp.impressions.toLocaleString()}</IndexTable.Cell>
-                  <IndexTable.Cell><Badge tone="warning">{opp.ctr}%</Badge></IndexTable.Cell>
+                  <IndexTable.Cell><Badge tone="warning">{`${opp.ctr}%`}</Badge></IndexTable.Cell>
                   <IndexTable.Cell>#{opp.currentPosition}</IndexTable.Cell>
                   <IndexTable.Cell><Text as="span" variant="bodySm">{opp.suggestedRewrite}</Text></IndexTable.Cell>
                   <IndexTable.Cell>
@@ -155,7 +156,7 @@ export default function KeywordAnalyticsPage() {
 
         {/* Assigned Keyword Rank Tracker Table */}
         <Card padding="0">
-          <BlockStack gap="300" padding="500">
+          <Box padding="500"><BlockStack gap="300">
             <InlineStack align="space-between">
               <Text as="h2" variant="headingMd">📊 Assigned Keywords & Weekly SERP Position Loop</Text>
               <Badge tone="success">1-PRIMARY-PER-URL ENFORCED</Badge>
@@ -163,7 +164,7 @@ export default function KeywordAnalyticsPage() {
             <Text as="p" variant="bodySm" tone="subdued">
               Per 10-KEYWORD-ENGINE.md §4.1: Exactly one primary keyword per URL per market is enforced at the database level.
             </Text>
-          </BlockStack>
+          </BlockStack></Box>
 
           <IndexTable
             resourceName={{ singular: "keyword", plural: "keywords" }}

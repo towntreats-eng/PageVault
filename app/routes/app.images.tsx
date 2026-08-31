@@ -1,153 +1,151 @@
-import { useState } from "react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
   Page,
   Layout,
   Card,
   Text,
-  Button,
   BlockStack,
   InlineStack,
   Badge,
   Banner,
   IndexTable,
   Thumbnail,
-  Grid,
-  ProgressBar,
-  Icon,
+  EmptyState,
 } from "@shopify/polaris";
-import { ImageIcon, CheckIcon, MagicIcon } from "@shopify/polaris-icons";
+import { ImageIcon } from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
-import { getImageOptStats, compressAllProductImages } from "../services/image.server";
+import { getAltTextCoverage, fillMissingAltText } from "../services/image.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const data = await getImageOptStats(admin, session.shop);
-  return json(data);
+  const coverage = await getAltTextCoverage(admin, session.shop);
+  return json({ coverage, shopDomain: session.shop });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (intent === "compress_images") {
-    const result = await compressAllProductImages(admin, session.shop);
-    return json({ success: true, message: "All product images compressed and alt tags updated!", result });
-  }
-
-  return json({ success: false });
+  const shopName = session.shop.replace(".myshopify.com", "");
+  const result = await fillMissingAltText(admin, session.shop, shopName, 50);
+  return json({ result });
 };
 
-export default function ImagesPage() {
-  const data = useLoaderData<typeof loader>();
-  const submit = useSubmit();
+export default function ImageAltTextPage() {
+  const { coverage } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const submit = useSubmit();
+  const isWriting = navigation.state === "submitting";
 
-  const isCompressing = navigation.state === "submitting";
-  const [compressedDone, setCompressedDone] = useState(false);
+  if (!coverage.available) {
+    return (
+      <Page title="Image alt text">
+        <Banner tone="critical" title="We could not read your products">
+          <p>{coverage.error || "The Shopify Admin API did not respond."} Nothing has been changed. Try again, and if it keeps failing, contact us.</p>
+        </Banner>
+      </Page>
+    );
+  }
 
-  const handleCompress = () => {
-    setCompressedDone(true);
-    submit({ intent: "compress_images" }, { method: "post" });
-  };
-
-  const rowMarkup = data.images.map((img, index) => (
-    <IndexTable.Row id={img.id} key={img.id} position={index}>
-      <IndexTable.Cell>
-        <Thumbnail source={img.imageUrl || ImageIcon} alt={img.altText} size="small" />
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Text as="span" fontWeight="bold">{img.productTitle}</Text>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Text as="span" tone="subdued">{(img.originalSizeBytes / 1024).toFixed(0)} KB</Text>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Text as="span" fontWeight="bold" tone="success">{(img.compressedSizeBytes / 1024).toFixed(0)} KB</Text>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Badge tone="success">-{img.savingsPercentage}% Saved</Badge>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Text as="span" variant="bodySm">{img.altText}</Text>
-      </IndexTable.Cell>
-    </IndexTable.Row>
-  ));
+  const missingRows = coverage.rows.filter((r) => !(r.altText || "").trim());
 
   return (
     <Page
-      title="🖼️ Image Compression & Alt Tag Optimizer"
-      subtitle="Automatically compress product images to WebP format and generate SEO Alt Tags."
-      primaryAction={{
-        content: isCompressing ? "Compressing Store Images..." : "⚡ Compress All Catalog Images",
-        loading: isCompressing,
-        onAction: handleCompress,
-      }}
+      title="Image alt text"
+      subtitle="Alt text is what search engines and screen readers read instead of the picture."
+      primaryAction={
+        missingRows.length > 0
+          ? {
+              content: isWriting ? "Writing alt text…" : `Fill ${Math.min(missingRows.length, 50)} empty alt texts`,
+              loading: isWriting,
+              onAction: () => submit({}, { method: "post" }),
+            }
+          : undefined
+      }
     >
-      <BlockStack gap="500">
-        {compressedDone && (
-          <Banner title="Images Compressed Successfully!" status="success" onDismiss={() => setCompressedDone(false)}>
+      <Layout>
+        <Layout.Section>
+          <Banner tone="info" title="What this screen does not do">
             <p>
-              🎉 All product images have been compressed to WebP format. Saved <strong>{data.totalSavingsMb} MB</strong> of bandwidth and improved page load speeds!
+              This app does not compress your images. Shopify serves your media from its own CDN, and shrinking those
+              files would mean re-uploading new media into your store — we do not do that. This screen only writes alt text.
             </p>
           </Banner>
+        </Layout.Section>
+
+        {actionData?.result && (
+          <Layout.Section>
+            <Banner tone={actionData.result.failed.length ? "warning" : "success"} title="Alt text applied">
+              <p>
+                {actionData.result.written} written, {actionData.result.skippedHumanValue} skipped because they already
+                had alt text you or your theme wrote, {actionData.result.failed.length} failed.
+                Each write is queued for verification against your live page — status shows as “Applied” until we have
+                actually seen it there.
+              </p>
+            </Banner>
+          </Layout.Section>
         )}
 
-        <Grid>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">Total Bandwidth Saved</Text>
-                <Text as="h3" variant="headingXl">{data.totalSavingsMb} MB</Text>
-                <Text as="p" variant="bodySm" tone="success">Average -76% size reduction</Text>
-              </BlockStack>
+        {coverage.totalImages > 0 && (
+          <Layout.Section>
+            <Card>
+              <InlineStack gap="800" wrap={false}>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Product images found</Text>
+                  <Text as="p" variant="headingLg">{coverage.totalImages}</Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Have alt text</Text>
+                  <Text as="p" variant="headingLg">{coverage.withAlt}</Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Missing alt text</Text>
+                  <Text as="p" variant="headingLg">{coverage.missingAlt}</Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Products scanned</Text>
+                  <Text as="p" variant="headingLg">{coverage.productsScanned}</Text>
+                </BlockStack>
+              </InlineStack>
             </Card>
-          </Grid.Cell>
+          </Layout.Section>
+        )}
 
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">Images Optimized</Text>
-                <Text as="h3" variant="headingXl">{data.totalCompressed} / {data.totalScanned}</Text>
-                <ProgressBar progress={100} tone="success" size="small" />
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">Alt Tags Generated</Text>
-                <Text as="h3" variant="headingXl">{data.altTextsFixed} Tags</Text>
-                <Text as="p" variant="bodySm" tone="subdued">100% accessible images</Text>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-        </Grid>
-
-        <Card padding="0">
-          <BlockStack gap="0">
-            <IndexTable
-              resourceName={{ singular: "image", plural: "images" }}
-              itemCount={data.images.length}
-              headings={[
-                { title: "Preview" },
-                { title: "Product Title" },
-                { title: "Original Size" },
-                { title: "Compressed Size" },
-                { title: "Savings" },
-                { title: "SEO Alt Tag" },
-              ]}
-              selectable={false}
-            >
-              {rowMarkup}
-            </IndexTable>
-          </BlockStack>
-        </Card>
-      </BlockStack>
+        <Layout.Section>
+          <Card padding="0">
+            {missingRows.length === 0 ? (
+              <EmptyState
+                heading="Every product image has alt text"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>We checked {coverage.totalImages} images across {coverage.productsScanned} products.</p>
+              </EmptyState>
+            ) : (
+              <IndexTable
+                resourceName={{ singular: "image", plural: "images" }}
+                itemCount={missingRows.length}
+                selectable={false}
+                headings={[{ title: "Image" }, { title: "Product" }, { title: "Alt text" }]}
+              >
+                {missingRows.slice(0, 100).map((row, index) => (
+                  <IndexTable.Row id={row.mediaId} key={row.mediaId} position={index}>
+                    <IndexTable.Cell>
+                      <Thumbnail source={row.imageUrl || ImageIcon} alt="" size="small" />
+                    </IndexTable.Cell>
+                    <IndexTable.Cell>
+                      <Text as="span">{row.productTitle}</Text>
+                    </IndexTable.Cell>
+                    <IndexTable.Cell>
+                      <Badge tone="warning">Empty</Badge>
+                    </IndexTable.Cell>
+                  </IndexTable.Row>
+                ))}
+              </IndexTable>
+            )}
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }

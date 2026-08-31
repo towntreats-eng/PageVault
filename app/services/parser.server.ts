@@ -10,6 +10,7 @@ export interface ParsedHtmlMetadata {
   h1Count: number;
   imagesTotal: number;
   imagesMissingAlt: number;
+  imageAlts: string[];
   jsonLdBlocks: Record<string, any>[];
   wordCount: number;
   isReachable: boolean;
@@ -42,10 +43,13 @@ export function parseHtmlContent(url: string, htmlText: string, statusCode = 200
   // Images & ALT text extraction
   const imgMatches = Array.from(htmlText.matchAll(/<img[^>]+>/gi));
   let imagesMissingAlt = 0;
+  const imageAlts: string[] = [];
   for (const imgTag of imgMatches) {
     const altMatch = imgTag[0].match(/alt=["']([\s\S]*?)["']/i);
     if (!altMatch || !altMatch[1].trim()) {
       imagesMissingAlt++;
+    } else {
+      imageAlts.push(altMatch[1].trim());
     }
   }
 
@@ -81,6 +85,7 @@ export function parseHtmlContent(url: string, htmlText: string, statusCode = 200
     h1Count: h1Matches.length,
     imagesTotal: imgMatches.length,
     imagesMissingAlt,
+    imageAlts,
     jsonLdBlocks,
     wordCount,
     isReachable: statusCode >= 200 && statusCode < 400,
@@ -92,6 +97,9 @@ export async function fetchAndParsePage(url: string): Promise<ParsedHtmlMetadata
   try {
     const response = await fetch(url, {
       headers: { "User-Agent": "ProofSEO-Parser/1.0 (+https://proofseo.app)" },
+      redirect: "follow",
+      // Without this a single hanging page stalls an entire crawl.
+      signal: AbortSignal.timeout(12_000),
     });
     const htmlText = await response.text();
     return parseHtmlContent(url, htmlText, response.status);
@@ -108,6 +116,7 @@ export async function fetchAndParsePage(url: string): Promise<ParsedHtmlMetadata
       h1Count: 0,
       imagesTotal: 0,
       imagesMissingAlt: 0,
+      imageAlts: [],
       jsonLdBlocks: [],
       wordCount: 0,
       isReachable: false,

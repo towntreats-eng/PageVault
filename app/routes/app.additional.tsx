@@ -76,7 +76,7 @@ export default function AiAutopilotPage() {
         {scan.geminiCited ? <Badge tone="success">Cited</Badge> : <Badge tone="critical">Not Cited</Badge>}
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Badge tone={scan.visibilityScore >= 70 ? "success" : "warning"}>{scan.visibilityScore}/100</Badge>
+        <Badge tone={scan.visibilityScore >= 70 ? "success" : "warning"}>{`${scan.visibilityScore}/100`}</Badge>
       </IndexTable.Cell>
     </IndexTable.Row>
   ));
@@ -88,7 +88,7 @@ export default function AiAutopilotPage() {
     >
       <BlockStack gap="500">
         {statusMessage && (
-          <Banner title="Notification Sent" status="success" onDismiss={() => setStatusMessage(null)}>
+          <Banner title="Notification Sent" tone="success" onDismiss={() => setStatusMessage(null)}>
             <p>{statusMessage}</p>
           </Banner>
         )}
@@ -157,12 +157,12 @@ export default function AiAutopilotPage() {
 
         {/* AI Citation Tracker Table */}
         <Card padding="0">
-          <BlockStack gap="300" padding="500">
+          <Box padding="500"><BlockStack gap="300">
             <InlineStack align="space-between">
               <Text as="h2" variant="headingMd">🌐 AI Search Engine Citation Matrix</Text>
               <Badge tone="info">PERPLEXITY • CHATGPT • CLAUDE • GEMINI</Badge>
             </InlineStack>
-          </BlockStack>
+          </BlockStack></Box>
 
           <IndexTable
             resourceName={{ singular: "scan", plural: "scans" }}

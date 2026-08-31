@@ -2,18 +2,19 @@ import prisma from "../db.server";
 import { executeShopifyGraphQL } from "./graphql.server";
 
 export interface SeoStats {
-  healthScore: number;
+  /** false when the Admin API failed. A failure is never rendered as a healthy store. */
+  available: boolean;
+  error?: string;
+  healthScore: number | null;
+  scoreBreakdown: string;
   totalProducts: number;
-  productsFixed: number;
   imagesScanned: number;
-  imagesCompressed: number;
-  mbSaved: number;
-  altTextsAdded: number;
-  metaTitlesFixed: number;
-  metaDescsFixed: number;
-  schemasActive: number;
-  brokenLinksFound: number;
-  isAutoOptimized: boolean;
+  missingTitles: number;
+  missingDescs: number;
+  missingAlts: number;
+  /** Real counts from our own Change / Verification tables. */
+  changesApplied: number;
+  changesVerified: number;
   hasProducts: boolean;
 }
 
@@ -21,7 +22,7 @@ export interface StoreDiagnosticItem {
   id: string;
   resourceTitle: string;
   resourceType: "product" | "collection" | "page";
-  issueCode: "missing_meta_title" | "missing_meta_desc" | "missing_alt_text" | "uncompressed_image";
+  issueCode: "missing_meta_title" | "missing_meta_desc" | "missing_alt_text";
   severity: "critical" | "warning";
   description: string;
   fixAction: string;
@@ -74,116 +75,101 @@ export async function updateSeoSettings(shopDomain: string, data: Partial<{
  * Zero fake numbers, zero hardcoded 48.5MB / 142 compressed images.
  */
 export async function getSeoAuditSummary(admin: any, shopDomain: string): Promise<SeoStats> {
+  const empty: SeoStats = {
+    available: true,
+    healthScore: null,
+    scoreBreakdown: "",
+    totalProducts: 0,
+    imagesScanned: 0,
+    missingTitles: 0,
+    missingDescs: 0,
+    missingAlts: 0,
+    changesApplied: 0,
+    changesVerified: 0,
+    hasProducts: false,
+  };
+
   try {
-    const resJson = await executeShopifyGraphQL(admin, `
-      query {
-        products(first: 250) {
-          edges {
-            node {
-              id
-              title
-              description
-              seo {
-                title
-                description
-              }
-              images(first: 10) {
-                edges {
-                  node {
-                    id
-                    altText
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `);
-
-    const products = resJson?.data?.products?.edges || [];
-    const totalProducts = products.length;
-
-    if (totalProducts === 0) {
-      // Real Store with 0 Products State
-      return {
-        healthScore: 100,
-        totalProducts: 0,
-        productsFixed: 0,
-        imagesScanned: 0,
-        imagesCompressed: 0,
-        mbSaved: 0,
-        altTextsAdded: 0,
-        metaTitlesFixed: 0,
-        metaDescsFixed: 0,
-        schemasActive: 1,
-        brokenLinksFound: 0,
-        isAutoOptimized: true,
-        hasProducts: false,
-      };
-    }
-
+    let cursor: string | null = null;
+    let totalProducts = 0;
     let imagesScanned = 0;
     let missingAlts = 0;
     let missingTitles = 0;
     let missingDescs = 0;
 
-    for (const edge of products) {
-      const p = edge.node;
-      const images = p.images?.edges || [];
-      imagesScanned += images.length;
+    // Paginate the whole catalogue. Reading only the first page would let us
+    // report a healthy store while thousands of products go unchecked.
+    for (let page = 0; page < 20; page++) {
+      const resJson: any = await executeShopifyGraphQL(
+        admin,
+        `query auditProducts($first: Int!, $after: String) {
+          products(first: $first, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            edges {
+              node {
+                id
+                title
+                seo { title description }
+                media(first: 20) {
+                  edges { node { ... on MediaImage { id alt } } }
+                }
+              }
+            }
+          }
+        }`,
+        { first: 100, after: cursor }
+      );
 
-      for (const imgEdge of images) {
-        if (!imgEdge.node.altText) {
-          missingAlts++;
+      const conn = resJson?.data?.products;
+      if (!conn) break;
+
+      for (const edge of conn.edges || []) {
+        const p = edge.node;
+        totalProducts++;
+        for (const m of p.media?.edges || []) {
+          if (!m.node?.id) continue;
+          imagesScanned++;
+          if (!(m.node.alt || "").trim()) missingAlts++;
         }
+        if (!p.seo?.title) missingTitles++;
+        if (!p.seo?.description) missingDescs++;
       }
 
-      if (!p.seo?.title) missingTitles++;
-      if (!p.seo?.description) missingDescs++;
+      if (!conn.pageInfo?.hasNextPage) break;
+      cursor = conn.pageInfo.endCursor;
     }
 
-    const totalIssues = missingAlts + missingTitles + missingDescs;
-    const healthScore = totalIssues === 0 ? 100 : Math.max(50, Math.round(100 - (totalIssues * 5)));
+    const [changesApplied, changesVerified] = await Promise.all([
+      prisma.change.count({ where: { shop_domain: shopDomain, reverted_at: null } }),
+      prisma.verification.count({ where: { shop_domain: shopDomain, result: "PASS" } }),
+    ]);
 
-    // Check if an optimization run was saved in DB
-    const dbAudit = await prisma.seoAudit.findFirst({
-      where: { shop_domain: shopDomain },
-      orderBy: { last_run_at: "desc" },
-    });
+    if (totalProducts === 0) {
+      return { ...empty, changesApplied, changesVerified };
+    }
+
+    // Transparent maths: every deduction is shown to the merchant.
+    const criticals = missingTitles + missingDescs;
+    const warnings = missingAlts;
+    const raw = 100 - criticals * 2 - warnings * 0.5;
+    const healthScore = Math.max(0, Math.min(100, Math.round(raw)));
 
     return {
-      healthScore: dbAudit ? dbAudit.health_score : healthScore,
+      available: true,
+      healthScore,
+      scoreBreakdown: `100 − (${criticals} missing meta tags × 2) − (${missingAlts} images without alt text × 0.5)`,
       totalProducts,
-      productsFixed: dbAudit ? dbAudit.products_fixed : (totalProducts - Math.ceil(totalIssues / 3)),
       imagesScanned,
-      imagesCompressed: dbAudit ? dbAudit.images_compressed : (imagesScanned - missingAlts),
-      mbSaved: dbAudit ? Number(dbAudit.bytes_saved) / (1024 * 1024) : Math.round((imagesScanned * 0.25) * 10) / 10,
-      altTextsAdded: dbAudit ? dbAudit.alt_texts_added : (imagesScanned - missingAlts),
-      metaTitlesFixed: dbAudit ? dbAudit.meta_titles_fixed : (totalProducts - missingTitles),
-      metaDescsFixed: dbAudit ? dbAudit.meta_descs_fixed : (totalProducts - missingDescs),
-      schemasActive: 5,
-      brokenLinksFound: 0,
-      isAutoOptimized: healthScore >= 95,
+      missingTitles,
+      missingDescs,
+      missingAlts,
+      changesApplied,
+      changesVerified,
       hasProducts: true,
     };
   } catch (err) {
-    console.error("Error fetching live SEO summary from Shopify Admin GraphQL:", err);
-    return {
-      healthScore: 100,
-      totalProducts: 0,
-      productsFixed: 0,
-      imagesScanned: 0,
-      imagesCompressed: 0,
-      mbSaved: 0,
-      altTextsAdded: 0,
-      metaTitlesFixed: 0,
-      metaDescsFixed: 0,
-      schemasActive: 1,
-      brokenLinksFound: 0,
-      isAutoOptimized: true,
-      hasProducts: false,
-    };
+    console.error("[seo] audit summary failed:", err);
+    return { ...empty, available: false, error: (err as Error).message };
   }
 }
 
@@ -271,134 +257,124 @@ export async function getSystematicStoreDiagnostic(admin: any, shopDomain: strin
   }
 }
 
+/**
+ * Applies the fixes we can apply safely, and reports ONLY what was actually written.
+ *
+ * The previous implementation of this function wrote nothing to Shopify. It counted
+ * missing meta tags, reported that count as "fixed", stored healthScore 100 in the
+ * database and invented "MB saved". That is the exact failure this product exists to
+ * attack (01-PRODUCT.md Gap 1) and it has been removed.
+ */
 export async function runFullAutoSeoOptimization(admin: any, shopDomain: string) {
-  let productsCount = 0;
+  const { writeResourceSeoMetafield } = await import("./meta_writer.server");
+
   let shopName = shopDomain.replace(".myshopify.com", "");
+  const written: { gid: string; field: string; value: string }[] = [];
+  const skippedHumanValue: string[] = [];
+  const failed: { gid: string; message: string }[] = [];
+  let productsScanned = 0;
 
   try {
-    const resJson = await executeShopifyGraphQL(admin, `
-      query {
-        shop {
-          name
-        }
-        products(first: 250) {
-          edges {
-            node {
-              id
-              title
-              description
-              seo {
+    let cursor: string | null = null;
+
+    for (let page = 0; page < 20; page++) {
+      const resJson: any = await executeShopifyGraphQL(
+        admin,
+        `query autoFix($first: Int!, $after: String) {
+          shop { name }
+          products(first: $first, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            edges {
+              node {
+                id
                 title
+                handle
                 description
-              }
-              images(first: 10) {
-                edges {
-                  node {
-                    id
-                    altText
-                  }
-                }
+                seo { title description }
               }
             }
           }
+        }`,
+        { first: 50, after: cursor }
+      );
+
+      if (resJson?.data?.shop?.name) shopName = resJson.data.shop.name;
+      const conn = resJson?.data?.products;
+      if (!conn) break;
+
+      for (const edge of conn.edges || []) {
+        const p = edge.node;
+        productsScanned++;
+        const targetUrl = `https://${shopDomain}/products/${p.handle}`;
+
+        if (!p.seo?.title) {
+          const value = `${p.title} | ${shopName}`.slice(0, 60);
+          try {
+            const res: any = await writeResourceSeoMetafield(
+              admin, shopDomain, p.id, "title_tag", value, targetUrl, "bulk"
+            );
+            if (res?.success) written.push({ gid: p.id, field: "title_tag", value });
+            else if (res?.protected) skippedHumanValue.push(p.id);
+          } catch (err) {
+            failed.push({ gid: p.id, message: (err as Error).message });
+          }
+        }
+
+        if (!p.seo?.description) {
+          const source = (p.description || "").replace(/\s+/g, " ").trim();
+          if (source.length >= 50) {
+            const value = source.slice(0, 155);
+            try {
+              const res: any = await writeResourceSeoMetafield(
+                admin, shopDomain, p.id, "description_tag", value, targetUrl, "bulk"
+              );
+              if (res?.success) written.push({ gid: p.id, field: "description_tag", value });
+              else if (res?.protected) skippedHumanValue.push(p.id);
+            } catch (err) {
+              failed.push({ gid: p.id, message: (err as Error).message });
+            }
+          }
+          // No product description = nothing truthful to write. We leave it and report it.
         }
       }
-    `);
 
-    if (resJson?.data?.shop?.name) {
-      shopName = resJson.data.shop.name;
+      if (!conn.pageInfo?.hasNextPage) break;
+      cursor = conn.pageInfo.endCursor;
     }
-
-    const products = resJson?.data?.products?.edges || [];
-    productsCount = products.length;
-
-    if (productsCount === 0) {
-      return {
-        success: true,
-        message: "Your store currently has 0 products. Add a product in Shopify to run optimization!",
-        healthScore: 100,
-        productsFixed: 0,
-        imagesCompressed: 0,
-        altTextsAdded: 0,
-        metaTitlesFixed: 0,
-        metaDescsFixed: 0,
-        bytesSaved: 0,
-        hasProducts: false,
-      };
-    }
-
-    let metaTitlesFixed = 0;
-    let metaDescsFixed = 0;
-    let altTextsAdded = 0;
-    let imagesScanned = 0;
-
-    for (const edge of products) {
-      const p = edge.node;
-      const images = p.images?.edges || [];
-      imagesScanned += images.length;
-
-      for (const imgEdge of images) {
-        if (!imgEdge.node.altText) {
-          altTextsAdded++;
-        }
-      }
-
-      if (!p.seo?.title) metaTitlesFixed++;
-      if (!p.seo?.description) metaDescsFixed++;
-    }
-
-    const imagesCompressed = imagesScanned;
-    const bytesSaved = BigInt(imagesCompressed * 250 * 1024); // ~250KB real average compression
-    const healthScore = 100;
-
-    await prisma.seoAudit.create({
-      data: {
-        shop_domain: shopDomain,
-        health_score: healthScore,
-        total_products: productsCount,
-        products_fixed: productsCount,
-        images_scanned: imagesScanned,
-        images_compressed: imagesCompressed,
-        bytes_saved: bytesSaved,
-        alt_texts_added: altTextsAdded || imagesScanned,
-        meta_titles_fixed: metaTitlesFixed || productsCount,
-        meta_descs_fixed: metaDescsFixed || productsCount,
-        schemas_active: 5,
-        broken_links_found: 0,
-      },
-    });
 
     await prisma.event.create({
       data: {
         shop_domain: shopDomain,
-        type: "auto_scan",
-        payload: JSON.stringify({ healthScore, productsCount, altTextsAdded }),
+        type: "bulk_meta_apply",
+        payload: JSON.stringify({
+          productsScanned,
+          written: written.length,
+          skippedHumanValue: skippedHumanValue.length,
+          failed: failed.length,
+        }),
       },
     });
 
     return {
-      success: true,
-      healthScore,
-      productsFixed: productsCount,
-      imagesCompressed,
-      altTextsAdded: altTextsAdded || imagesScanned,
-      metaTitlesFixed: metaTitlesFixed || productsCount,
-      metaDescsFixed: metaDescsFixed || productsCount,
-      bytesSaved: Number(bytesSaved) / (1024 * 1024),
-      hasProducts: true,
+      success: failed.length === 0,
+      productsScanned,
+      metaTitlesWritten: written.filter((w) => w.field === "title_tag").length,
+      metaDescsWritten: written.filter((w) => w.field === "description_tag").length,
+      skippedHumanValue: skippedHumanValue.length,
+      failed,
+      // Every write above scheduled its own live-page verification.
+      status: "Applied — verification pending" as const,
     };
   } catch (error) {
-    console.error("Auto SEO optimization error:", error);
+    console.error("[seo] bulk apply failed:", error);
     return {
-      success: true,
-      healthScore: 100,
-      productsFixed: 0,
-      imagesCompressed: 0,
-      altTextsAdded: 0,
-      metaTitlesFixed: 0,
-      metaDescsFixed: 0,
-      bytesSaved: 0,
-      hasProducts: false,
+      success: false,
+      productsScanned,
+      metaTitlesWritten: written.filter((w) => w.field === "title_tag").length,
+      metaDescsWritten: written.filter((w) => w.field === "description_tag").length,
+      skippedHumanValue: skippedHumanValue.length,
+      failed: [...failed, { gid: "-", message: (error as Error).message }],
+      status: "Failed" as const,
     };
   }
 }

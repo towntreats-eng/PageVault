@@ -108,12 +108,12 @@ export default function SpeedPage() {
     >
       <BlockStack gap="500">
         {fixedMessage && (
-          <Banner title="301 Redirects Active" status="success" onDismiss={() => setFixedMessage(null)}>
+          <Banner title="301 Redirects Active" tone="success" onDismiss={() => setFixedMessage(null)}>
             <p>{fixedMessage}</p>
           </Banner>
         )}
 
-        <Banner title="Honest Performance Diagnosis" status="info">
+        <Banner title="Honest Performance Diagnosis" tone="info">
           <p>
             Per 02-SHOPIFY-REALITY.md §5: ProofSEO keeps its storefront footprint at <strong>0 KB JS</strong>.
             We compress catalog images and create 301 redirects to preserve link equity. Third-party theme scripts cannot be removed by an app.
@@ -183,12 +183,12 @@ export default function SpeedPage() {
         </Card>
 
         <Card padding="0">
-          <BlockStack gap="300" padding="500">
+          <Box padding="500"><BlockStack gap="300">
             <InlineStack align="space-between">
               <Text as="h2" variant="headingMd">404 Broken Link Scanner & Auto Redirects</Text>
               <Button variant="primary" onClick={handleFixRedirects}>Scan & Fix All 404s</Button>
             </InlineStack>
-          </BlockStack>
+          </BlockStack></Box>
           <IndexTable
             resourceName={{ singular: "link", plural: "links" }}
             itemCount={brokenLinks.length}

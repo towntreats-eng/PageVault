@@ -45,7 +45,7 @@ export default function SubmissionPage() {
       subtitle="Full compliance validation against 08-APPROVAL-CHECKLIST.md and Shopify App Store guidelines."
     >
       <BlockStack gap="500">
-        <Banner title="100% Technical & Billing Compliance Verified" status="success">
+        <Banner title="100% Technical & Billing Compliance Verified" tone="success">
           <p>
             All 60 tasks across Phase 0 through Phase 8 are fully built, tested, and compiled cleanly with zero errors.
           </p>
@@ -96,7 +96,7 @@ export default function SubmissionPage() {
               {selfReviewChecklist.map((item, idx) => (
                 <List.Item key={idx}>
                   <InlineStack gap="200">
-                    <Badge tone="success">{item.status}</Badge>
+                    <Badge tone="success">{`${item.status}`}</Badge>
                     <Text as="span" fontWeight="bold">{item.name}:</Text>
                     <Text as="span" tone="subdued">{item.detail}</Text>
                   </InlineStack>

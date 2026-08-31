@@ -17,5 +17,6 @@
     "target": "ES2022",
     "baseUrl": ".",
     "types": ["node"]
-  }
+  },
+  "exclude": ["node_modules", "build", "scratch"]
 }

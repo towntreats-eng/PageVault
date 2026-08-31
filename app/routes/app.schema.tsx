@@ -62,7 +62,7 @@ export default function SchemaPage() {
     >
       <BlockStack gap="500">
         {conflict.hasConflict && (
-          <Banner title="Duplicate Product Schema Conflict Detected" status="warning">
+          <Banner title="Duplicate Product Schema Conflict Detected" tone="warning">
             <p>
               Your active theme or another app already emits <code>Product</code> JSON-LD schema.
               Per 03-ARCHITECTURE.md §4: ProofSEO Product schema is kept <strong>disabled by default</strong> to prevent Google Search Console duplicate structured data warnings.
@@ -71,7 +71,7 @@ export default function SchemaPage() {
         )}
 
         {saved && (
-          <Banner title="Schema Markup Settings Saved!" status="success" onDismiss={() => setSaved(false)}>
+          <Banner title="Schema Markup Settings Saved!" tone="success" onDismiss={() => setSaved(false)}>
             <p>JSON-LD structured data is rendered via App Embed block with zero storefront JavaScript.</p>
           </Banner>
         )}

@@ -136,7 +136,7 @@ export default function MetaTagsPage() {
     >
       <BlockStack gap="500">
         {savedMessage && (
-          <Banner title="SEO Meta Templates Updated" status="success" onDismiss={() => setSavedMessage(null)}>
+          <Banner title="SEO Meta Templates Updated" tone="success" onDismiss={() => setSavedMessage(null)}>
             <p>{savedMessage}</p>
           </Banner>
         )}
