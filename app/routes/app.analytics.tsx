@@ -1,188 +1,274 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
+import { useState } from "react";
 import {
   Page,
+  Layout,
   Card,
   Text,
   Badge,
   BlockStack,
-  Box,
   InlineStack,
   IndexTable,
   Banner,
   Button,
-  Divider,
+  TextField,
+  EmptyState,
+  Link as PolarisLink,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { getGscConnectionStatus, getCtrOpportunities, getCannibalisationIssues } from "../services/gsc.server";
-import { getAssignedKeywordsWithRanks, assignPrimaryKeyword } from "../services/keyword_engine.server";
+import {
+  getAssignedKeywordsWithRanks,
+  assignPrimaryKeyword,
+  refreshRanksFromGsc,
+} from "../services/keyword_engine.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  const gscStatus = await getGscConnectionStatus(shopDomain);
-  const ctrOpportunities = await getCtrOpportunities(shopDomain);
-  const cannibalisation = await getCannibalisationIssues(shopDomain);
-  const assignedKeywords = await getAssignedKeywordsWithRanks(shopDomain);
+  const [gscStatus, ctr, cannibalisation, assignedKeywords] = await Promise.all([
+    getGscConnectionStatus(shopDomain),
+    getCtrOpportunities(shopDomain),
+    getCannibalisationIssues(shopDomain),
+    getAssignedKeywordsWithRanks(shopDomain),
+  ]);
 
-  return json({
-    gscStatus,
-    ctrOpportunities,
-    cannibalisation,
-    assignedKeywords,
-    shopDomain,
-  });
+  return json({ gscStatus, ctr, cannibalisation, assignedKeywords, shopDomain });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "assign_keyword") {
-    const resourceGid = String(formData.get("resourceGid") || "gid://shopify/Product/101");
-    const url = String(formData.get("url") || `https://${session.shop}/products/sample`);
-    const term = String(formData.get("term") || "luxury silk dress");
+    const resourceGid = String(formData.get("resourceGid") || "").trim();
+    const url = String(formData.get("url") || "").trim();
+    const term = String(formData.get("term") || "").trim();
+    const market = String(formData.get("market") || "US");
 
-    await assignPrimaryKeyword(session.shop, resourceGid, url, term, "US");
-    return json({ success: true, message: `Assigned primary keyword '${term}' (1-primary-per-URL constraint enforced).` });
+    if (!resourceGid || !url || !term) {
+      return json({ kind: "error" as const, message: "Product ID, page URL and keyword are all required." });
+    }
+    await assignPrimaryKeyword(session.shop, resourceGid, url, term, market);
+    return json({ kind: "assigned" as const, term });
   }
 
-  return json({ success: true });
+  if (intent === "refresh_ranks") {
+    const result = await refreshRanksFromGsc(session.shop);
+    return json({ kind: "ranks" as const, result });
+  }
+
+  return json({ kind: "none" as const });
 };
 
-export default function KeywordAnalyticsPage() {
-  const { gscStatus, ctrOpportunities, cannibalisation, assignedKeywords } = useLoaderData<typeof loader>();
+export default function KeywordsPage() {
+  const { gscStatus, ctr, cannibalisation, assignedKeywords, shopDomain } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const busy = navigation.state === "submitting";
 
-  const isAssigning = navigation.state === "submitting";
-
-  const handleAssignSample = (term: string, url: string) => {
-    submit({ intent: "assign_keyword", term, url }, { method: "post" });
-  };
-
-  const rowsMarkup = assignedKeywords.map((kw, index) => (
-    <IndexTable.Row id={kw.id} key={kw.id} position={index}>
-      <IndexTable.Cell>
-        <Text as="span" fontWeight="bold">{kw.term}</Text>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Badge tone="info">{`${kw.market}`}</Badge>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Text as="span">{kw.volume.toLocaleString()} / mo</Text>
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Badge tone={kw.difficulty <= 35 ? "success" : "warning"}>{`${kw.difficulty}/100 ({kw.winnability})`}</Badge>
-      </IndexTable.Cell>
-
-      {/* Closed loop rank history: D0 -> D7 -> D28 */}
-      <IndexTable.Cell>
-        <InlineStack gap="100">
-          <Badge>{`D0: #${kw.positionD0}`}</Badge>
-          <Badge tone="info">{`D7: #${kw.positionD7}`}</Badge>
-          <Badge tone="success">{`D28: #${kw.positionD28}`}</Badge>
-        </InlineStack>
-      </IndexTable.Cell>
-
-      <IndexTable.Cell>
-        {kw.aiOverviewPresent ? (
-          <Badge tone="attention">Google AI Overview Active</Badge>
-        ) : (
-          <Badge>Organic Only</Badge>
-        )}
-      </IndexTable.Cell>
-    </IndexTable.Row>
-  ));
+  const [term, setTerm] = useState("");
+  const [url, setUrl] = useState("");
+  const [gid, setGid] = useState("");
 
   return (
     <Page
-      title="🎯 Keyword Engine & Google Rank Tracker"
-      subtitle="Closed loop: Research → Assign → Verify → Track exact position week-over-week."
+      title="Keywords"
+      subtitle="Positions come from your own Search Console data, measured — not estimated."
+      primaryAction={{
+        content: busy ? "Refreshing…" : "Refresh positions",
+        loading: busy,
+        disabled: !gscStatus.isConnected,
+        onAction: () => submit({ intent: "refresh_ranks" }, { method: "post" }),
+      }}
     >
-      <BlockStack gap="500">
-        {!gscStatus.isConnected ? (
-          <Banner title="Google Search Console Disconnected" tone="info">
-            <p>Connect GSC OAuth to pull real click, impression, CTR, and average position search data directly from Google.</p>
-          </Banner>
-        ) : (
-          <Banner title="Google Search Console Connected" tone="success">
-            <p>Connected property: <strong>{gscStatus.siteUrl}</strong>.</p>
-          </Banner>
+      <Layout>
+        {!gscStatus.isConnected && (
+          <Layout.Section>
+            <Banner tone="warning" title="Search Console is not connected">
+              <p>
+                Without it we have no measured positions, no impressions and no click data for {shopDomain}. We will not
+                show estimates in its place — connect the property and the numbers on this page become real.
+                {!gscStatus.oauthConfigured &&
+                  " (The server is also missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, so the connect flow is disabled.)"}
+              </p>
+            </Banner>
+          </Layout.Section>
         )}
 
-        {/* High CTR Opportunity Table */}
-        <Card padding="500">
-          <BlockStack gap="400">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">🎯 High-Impression CTR Opportunities (GSC Data)</Text>
-              <Badge tone="attention">CTR REWRITE CANDIDATES</Badge>
-            </InlineStack>
-            <Divider />
+        {actionData?.kind === "ranks" && (
+          <Layout.Section>
+            <Banner tone={actionData.result.updated > 0 ? "success" : "info"} title="Positions refreshed">
+              <p>
+                {actionData.result.updated} keyword{actionData.result.updated === 1 ? "" : "s"} had a measured position
+                in the last 7 days of Search Console data.
+                {actionData.result.error ? ` ${actionData.result.error}` : ""}
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
 
-            <IndexTable
-              resourceName={{ singular: "opportunity", plural: "opportunities" }}
-              itemCount={ctrOpportunities.length}
-              headings={[
-                { title: "Target Search Query" },
-                { title: "Impressions" },
-                { title: "Current CTR" },
-                { title: "Avg Position" },
-                { title: "Suggested Rewrite" },
-                { title: "Action" },
-              ]}
-              selectable={false}
-            >
-              {ctrOpportunities.map((opp, idx) => (
-                <IndexTable.Row id={opp.query} key={idx} position={idx}>
-                  <IndexTable.Cell><Text as="span" fontWeight="bold">{opp.query}</Text></IndexTable.Cell>
-                  <IndexTable.Cell>{opp.impressions.toLocaleString()}</IndexTable.Cell>
-                  <IndexTable.Cell><Badge tone="warning">{`${opp.ctr}%`}</Badge></IndexTable.Cell>
-                  <IndexTable.Cell>#{opp.currentPosition}</IndexTable.Cell>
-                  <IndexTable.Cell><Text as="span" variant="bodySm">{opp.suggestedRewrite}</Text></IndexTable.Cell>
-                  <IndexTable.Cell>
-                    <Button size="micro" variant="primary" loading={isAssigning} onClick={() => handleAssignSample(opp.query, opp.pageUrl)}>
-                      Assign Primary
-                    </Button>
-                  </IndexTable.Cell>
-                </IndexTable.Row>
-              ))}
-            </IndexTable>
-          </BlockStack>
-        </Card>
+        {actionData?.kind === "error" && (
+          <Layout.Section>
+            <Banner tone="critical" title="Could not assign that keyword">
+              <p>{actionData.message}</p>
+            </Banner>
+          </Layout.Section>
+        )}
 
-        {/* Assigned Keyword Rank Tracker Table */}
-        <Card padding="0">
-          <Box padding="500"><BlockStack gap="300">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">📊 Assigned Keywords & Weekly SERP Position Loop</Text>
-              <Badge tone="success">1-PRIMARY-PER-URL ENFORCED</Badge>
-            </InlineStack>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Per 10-KEYWORD-ENGINE.md §4.1: Exactly one primary keyword per URL per market is enforced at the database level.
-            </Text>
-          </BlockStack></Box>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">Assign a primary keyword</Text>
+              <Text as="p" tone="subdued" variant="bodySm">
+                One primary keyword per URL per market. The database enforces it, so a second assignment replaces the first
+                instead of letting two pages compete.
+              </Text>
+              <InlineStack gap="300" wrap>
+                <TextField label="Keyword" value={term} onChange={setTerm} autoComplete="off" />
+                <TextField label="Page URL" value={url} onChange={setUrl} autoComplete="off" placeholder={`https://${shopDomain}/products/…`} />
+                <TextField label="Product ID" value={gid} onChange={setGid} autoComplete="off" placeholder="gid://shopify/Product/…" />
+              </InlineStack>
+              <InlineStack>
+                <Button
+                  variant="primary"
+                  loading={busy}
+                  onClick={() => submit({ intent: "assign_keyword", term, url, resourceGid: gid }, { method: "post" })}
+                >
+                  Assign keyword
+                </Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
 
-          <IndexTable
-            resourceName={{ singular: "keyword", plural: "keywords" }}
-            itemCount={assignedKeywords.length}
-            headings={[
-              { title: "Assigned Keyword" },
-              { title: "Market" },
-              { title: "Search Volume" },
-              { title: "Difficulty / Winnability" },
-              { title: "Position Loop (D0 → D7 → D28)" },
-              { title: "AI Search Presence" },
-            ]}
-            selectable={false}
-          >
-            {rowsMarkup}
-          </IndexTable>
-        </Card>
-      </BlockStack>
+        <Layout.Section>
+          <Card padding="0">
+            {assignedKeywords.length === 0 ? (
+              <EmptyState heading="No keywords assigned yet" image="">
+                <p>Assign a keyword to a page above, then refresh positions to see where it actually ranks.</p>
+              </EmptyState>
+            ) : (
+              <IndexTable
+                resourceName={{ singular: "keyword", plural: "keywords" }}
+                itemCount={assignedKeywords.length}
+                selectable={false}
+                headings={[
+                  { title: "Keyword" },
+                  { title: "Market" },
+                  { title: "Page" },
+                  { title: "Position" },
+                  { title: "Change" },
+                  { title: "Measured" },
+                ]}
+              >
+                {assignedKeywords.map((k, index) => {
+                  const delta =
+                    k.latestPosition !== null && k.previousPosition !== null
+                      ? k.previousPosition - k.latestPosition
+                      : null;
+                  return (
+                    <IndexTable.Row id={k.id} key={k.id} position={index}>
+                      <IndexTable.Cell><Text as="span">{k.term}</Text></IndexTable.Cell>
+                      <IndexTable.Cell><Text as="span">{k.market}</Text></IndexTable.Cell>
+                      <IndexTable.Cell><PolarisLink url={k.url} target="_blank">{k.url}</PolarisLink></IndexTable.Cell>
+                      <IndexTable.Cell>
+                        {k.latestPosition === null
+                          ? <Text as="span" tone="subdued">Not measured</Text>
+                          : <Text as="span">{`#${k.latestPosition}`}</Text>}
+                      </IndexTable.Cell>
+                      <IndexTable.Cell>
+                        {delta === null
+                          ? <Text as="span" tone="subdued">—</Text>
+                          : <Badge tone={delta > 0 ? "success" : delta < 0 ? "warning" : undefined}>
+                              {delta > 0 ? `up ${delta}` : delta < 0 ? `down ${Math.abs(delta)}` : "no change"}
+                            </Badge>}
+                      </IndexTable.Cell>
+                      <IndexTable.Cell>
+                        <Text as="span" tone="subdued">
+                          {k.measuredAt ? new Date(k.measuredAt).toLocaleDateString() : "—"}
+                        </Text>
+                      </IndexTable.Cell>
+                    </IndexTable.Row>
+                  );
+                })}
+              </IndexTable>
+            )}
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">Pages ranking but not being clicked</Text>
+              {!ctr.available ? (
+                <Text as="p" tone="subdued">
+                  {ctr.connected ? ctr.error : "Connect Search Console to see this."}
+                </Text>
+              ) : ctr.rows.length === 0 ? (
+                <Text as="p" tone="subdued">Nothing stands out in the last 28 days.</Text>
+              ) : (
+                <IndexTable
+                  resourceName={{ singular: "query", plural: "queries" }}
+                  itemCount={ctr.rows.length}
+                  selectable={false}
+                  headings={[
+                    { title: "Query" },
+                    { title: "Page" },
+                    { title: "Impressions" },
+                    { title: "Your CTR" },
+                    { title: "Typical at this position" },
+                  ]}
+                >
+                  {ctr.rows.slice(0, 25).map((o, index) => (
+                    <IndexTable.Row id={`${o.query}-${index}`} key={`${o.query}-${index}`} position={index}>
+                      <IndexTable.Cell><Text as="span">{o.query}</Text></IndexTable.Cell>
+                      <IndexTable.Cell><PolarisLink url={o.pageUrl} target="_blank">{o.pageUrl}</PolarisLink></IndexTable.Cell>
+                      <IndexTable.Cell><Text as="span">{String(o.impressions)}</Text></IndexTable.Cell>
+                      <IndexTable.Cell><Text as="span">{`${o.ctr}%`}</Text></IndexTable.Cell>
+                      <IndexTable.Cell><Text as="span" tone="subdued">{`${o.typicalCtrAtPosition}% at #${o.position}`}</Text></IndexTable.Cell>
+                    </IndexTable.Row>
+                  ))}
+                </IndexTable>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">Your own pages competing for the same query</Text>
+              {!cannibalisation.available ? (
+                <Text as="p" tone="subdued">
+                  {cannibalisation.connected ? cannibalisation.error : "Connect Search Console to see this."}
+                </Text>
+              ) : cannibalisation.rows.length === 0 ? (
+                <Text as="p" tone="subdued">No overlap found in the last 28 days.</Text>
+              ) : (
+                <BlockStack gap="300">
+                  {cannibalisation.rows.slice(0, 15).map((issue) => (
+                    <BlockStack key={issue.query} gap="100">
+                      <Text as="p" fontWeight="semibold">{issue.query}</Text>
+                      {issue.urls.map((u) => (
+                        <InlineStack key={u.pageUrl} gap="200">
+                          <Text as="span" tone="subdued">{`#${u.position}`}</Text>
+                          <PolarisLink url={u.pageUrl} target="_blank">{u.pageUrl}</PolarisLink>
+                        </InlineStack>
+                      ))}
+                    </BlockStack>
+                  ))}
+                </BlockStack>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }

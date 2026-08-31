@@ -112,26 +112,48 @@ export async function processProductAutopilot(
 }
 
 /**
- * Task 7.3 & 7.4 - Weekly Proof Report & WhatsApp India Mode
+ * Weekly proof report.
+ *
+ * Counts only what happened in the last 7 days, and only what we can prove.
+ * The previous version fell back to "42 optimizations / 40 verified" when the
+ * store had none, hardcoded a 95.2% verification rate, claimed "+18.4% traffic
+ * growth" that was never measured, and listed two invented keyword rankings -
+ * in an email and a WhatsApp message sent to the merchant.
  */
 export async function generateWeeklyProofReport(shopDomain: string) {
-  const changeCount = await prisma.change.count({ where: { shop_domain: shopDomain } });
-  const verifiedCount = await prisma.verification.count({
-    where: { shop_domain: shopDomain, result: "PASS" },
-  });
+  const since = new Date(Date.now() - 7 * 86_400_000);
+
+  const [applied, verified, notDetected, pending] = await Promise.all([
+    prisma.change.count({ where: { shop_domain: shopDomain, applied_at: { gte: since } } }),
+    prisma.verification.count({ where: { shop_domain: shopDomain, result: "PASS", attempted_at: { gte: since } } }),
+    prisma.verification.count({ where: { shop_domain: shopDomain, result: "FAIL", attempted_at: { gte: since } } }),
+    prisma.verification.count({ where: { shop_domain: shopDomain, result: "PENDING", attempted_at: { gte: since } } }),
+  ]);
+
+  const checked = verified + notDetected;
+  const verificationRate = checked === 0 ? null : Math.round((verified / checked) * 100);
+
+  const nothingHappened = applied === 0 && checked === 0;
 
   return {
     shopDomain,
-    period: "Last 7 Days",
-    totalOptimizationsApplied: changeCount || 42,
-    totalVerifiedByProofEngine: verifiedCount || 40,
-    verificationRate: "95.2%",
-    trafficGrowthPercentage: "+18.4%",
-    topRankingKeywords: [
-      { keyword: "silk evening dress", position: 4, movement: "+12 spots" },
-      { keyword: "leather oxford shoes", position: 5, movement: "+9 spots" },
-    ],
-    emailDigestSubject: `[ProofSEO] Weekly Proof Report for ${shopDomain}: 40 Verified Optimizations`,
-    whatsappMessageText: `🚀 *ProofSEO Weekly Report for ${shopDomain}*\n\n✅ 40 optimizations verified live on storefront\n📈 Traffic growth: +18.4%\n🏆 Top Keyword: 'silk evening dress' -> #4\n\nView full proof dashboard in Shopify Admin.`,
+    periodStart: since.toISOString(),
+    periodEnd: new Date().toISOString(),
+    applied,
+    verified,
+    notDetected,
+    pending,
+    /** null when nothing was checked. Never rendered as a percentage. */
+    verificationRate,
+    nothingHappened,
+    emailDigestSubject: nothingHappened
+      ? `[ProofSEO] Nothing changed on ${shopDomain} this week`
+      : `[ProofSEO] ${verified} change${verified === 1 ? "" : "s"} verified on ${shopDomain} this week`,
+    emailBody: nothingHappened
+      ? `We made no changes to ${shopDomain} in the last 7 days, so there is nothing to report. Open the app if you would like to run a scan.`
+      : `In the last 7 days we applied ${applied} change${applied === 1 ? "" : "s"} to ${shopDomain}. ` +
+        `${verified} ${verified === 1 ? "has" : "have"} been confirmed on your live storefront` +
+        `${notDetected > 0 ? `, and ${notDetected} could not be found on the live page - open the app to see why` : ""}` +
+        `${pending > 0 ? `. ${pending} ${pending === 1 ? "is" : "are"} still being checked` : ""}.`,
   };
 }

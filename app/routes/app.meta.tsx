@@ -20,38 +20,70 @@ import { getSeoSettings, updateSeoSettings } from "../services/seo.server";
 import { renderMetaTemplate } from "../utils/template";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const settings = await getSeoSettings(session.shop);
   const shopName = session.shop.replace(".myshopify.com", "");
 
-  const sampleProducts = [
-    {
-      id: "gid://shopify/Product/101",
-      title: "Luxury Silk Evening Dress",
-      vendor: "Couture Fashion",
-      price: "$299.00",
-      humanCustomTitle: null,
-      proofStatus: "VERIFIED",
-    },
-    {
-      id: "gid://shopify/Product/102",
-      title: "Leather Oxford Shoes",
-      vendor: "Crafted Leather",
-      price: "$189.00",
-      humanCustomTitle: "Custom Handcrafted Oxford Shoes", // Human work protected
-      proofStatus: "PROTECTED",
-    },
-    {
-      id: "gid://shopify/Product/103",
-      title: "Minimalist Gold Watch",
-      vendor: "Timepiece Co",
-      price: "$149.00",
-      humanCustomTitle: null,
-      proofStatus: "VERIFIED",
-    },
-  ];
+  // Real products with their real current SEO values, and the real verification
+  // status of anything we have written. The previous version rendered three
+  // invented products and labelled them "VERIFIED LIVE".
+  const { executeShopifyGraphQL } = await import("../services/graphql.server");
+  const prisma = (await import("../db.server")).default;
 
-  return json({ settings, products: sampleProducts, shopName });
+  const res: any = await executeShopifyGraphQL(
+    admin,
+    `query metaProducts($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            id
+            title
+            handle
+            vendor
+            seo { title description }
+            priceRangeV2 { minVariantPrice { amount currencyCode } }
+          }
+        }
+      }
+    }`,
+    { first: 50 }
+  );
+
+  const nodes = (res?.data?.products?.edges ?? []).map((e: any) => e.node);
+
+  const changes = await prisma.change.findMany({
+    where: { shop_domain: session.shop, field: "title_tag", reverted_at: null },
+    orderBy: { applied_at: "desc" },
+  });
+  const verifications = await prisma.verification.findMany({
+    where: { shop_domain: session.shop },
+    orderBy: { attempted_at: "desc" },
+  });
+  const latestChangeByGid = new Map<string, string>();
+  for (const c of changes) if (!latestChangeByGid.has(c.resource_gid)) latestChangeByGid.set(c.resource_gid, c.id);
+  const resultByChangeId = new Map(verifications.map((v) => [v.change_id, v.result]));
+
+  type MetaProductRow = {
+    id: string; title: string; vendor: string; price: string;
+    humanCustomTitle: string | null; status: string;
+  };
+  const products: MetaProductRow[] = nodes.map((n: any) => {
+    const changeId = latestChangeByGid.get(n.id);
+    const verdict = changeId ? resultByChangeId.get(changeId) : undefined;
+    return {
+      id: n.id,
+      title: n.title,
+      vendor: n.vendor ?? "",
+      price: n.priceRangeV2?.minVariantPrice
+        ? `${n.priceRangeV2.minVariantPrice.amount} ${n.priceRangeV2.minVariantPrice.currencyCode}`
+        : "",
+      // A value already on the product that we did not write is the merchant's.
+      humanCustomTitle: !changeId && n.seo?.title ? n.seo.title : null,
+      status: verdict === "PASS" ? "Verified" : verdict === "PENDING" ? "Applied" : verdict === "FAIL" ? "Not detected" : changeId ? "Applied" : "Not started",
+    };
+  });
+
+  return json({ settings, products, shopName });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -73,7 +105,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     product_desc_template: descTemplate,
   });
 
-  return json({ success: true, message: "Templates updated & manual-value protection active." });
+  return json({ success: true, message: "Template saved." });
 };
 
 export default function MetaTagsPage() {
@@ -87,7 +119,7 @@ export default function MetaTagsPage() {
   const [descTemplate, setDescTemplate] = useState(settings.product_desc_template);
 
   const handleSave = () => {
-    setSavedMessage("Templates saved. Proof Engine auto-verification enqueued.");
+    setSavedMessage("Template saved. It applies the next time you write meta tags — saving a template changes nothing on your store by itself.");
     submit({ intent: "save", titleTemplate, descTemplate }, { method: "post" });
   };
 
@@ -109,9 +141,18 @@ export default function MetaTagsPage() {
 
         <IndexTable.Cell>
           {p.humanCustomTitle ? (
-            <Badge tone="attention">PROTECTED (HUMAN WORK)</Badge>
+            <Badge tone="attention">Your text — we will not touch it</Badge>
           ) : (
-            <Badge tone="success">VERIFIED LIVE</Badge>
+            <Badge
+              tone={
+                p.status === "Verified" ? "success"
+                  : p.status === "Applied" ? "info"
+                  : p.status === "Not detected" ? "warning"
+                  : undefined
+              }
+            >
+              {p.status}
+            </Badge>
           )}
         </IndexTable.Cell>
       </IndexTable.Row>

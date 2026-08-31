@@ -1,9 +1,9 @@
-import { useState } from "react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
   Page,
+  Layout,
   Card,
   Text,
   Badge,
@@ -11,176 +11,157 @@ import {
   InlineStack,
   IndexTable,
   Banner,
-  Button,
-  Grid,
-  ProgressBar,
-  Box,
-  Divider,
+  EmptyState,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { getAiVisibilityReport } from "../services/ai_citation.server";
+import { getAiVisibilityReport, runCitationScan } from "../services/ai_citation.server";
 import { generateWeeklyProofReport } from "../services/autopilot.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-
-  const aiReport = await getAiVisibilityReport(session.shop);
-  const weeklyReport = await generateWeeklyProofReport(session.shop);
-
-  return json({
-    aiReport,
-    weeklyReport,
-    shopDomain: session.shop,
-  });
+  const [aiReport, weeklyReport] = await Promise.all([
+    getAiVisibilityReport(session.shop),
+    generateWeeklyProofReport(session.shop),
+  ]);
+  return json({ aiReport, weeklyReport, shopDomain: session.shop });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (intent === "send_whatsapp") {
-    return json({ success: true, message: `WhatsApp India mode report dispatched to registered store phone number!` });
-  }
-
-  return json({ success: true, message: `Autopilot settings saved.` });
+  const { admin, session } = await authenticate.admin(request);
+  const result = await runCitationScan(admin, session.shop);
+  return json({ result });
 };
 
-export default function AiAutopilotPage() {
-  const { aiReport, weeklyReport } = useLoaderData<typeof loader>();
+export default function AiVisibilityPage() {
+  const { aiReport, weeklyReport, shopDomain } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
-
-  const isSending = navigation.state === "submitting";
-  const [autopilotEnabled, setAutopilotEnabled] = useState(true);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  const handleSendWhatsApp = () => {
-    setStatusMessage("WhatsApp Proof Report dispatched successfully!");
-    submit({ intent: "send_whatsapp" }, { method: "post" });
-  };
-
-  const citationRowsMarkup = aiReport.scans.map((scan, idx) => (
-    <IndexTable.Row id={scan.query} key={idx} position={idx}>
-      <IndexTable.Cell><Text as="span" fontWeight="bold">{scan.query}</Text></IndexTable.Cell>
-      <IndexTable.Cell>
-        {scan.chatgptCited ? <Badge tone="success">Cited</Badge> : <Badge tone="critical">Not Cited</Badge>}
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        {scan.claudeCited ? <Badge tone="success">Cited</Badge> : <Badge tone="critical">Not Cited</Badge>}
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        {scan.perplexityCited ? <Badge tone="success">Cited</Badge> : <Badge tone="critical">Not Cited</Badge>}
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        {scan.geminiCited ? <Badge tone="success">Cited</Badge> : <Badge tone="critical">Not Cited</Badge>}
-      </IndexTable.Cell>
-      <IndexTable.Cell>
-        <Badge tone={scan.visibilityScore >= 70 ? "success" : "warning"}>{`${scan.visibilityScore}/100`}</Badge>
-      </IndexTable.Cell>
-    </IndexTable.Row>
-  ));
+  const busy = navigation.state === "submitting";
+  const configured = aiReport.configuredEngines.length > 0;
 
   return (
     <Page
-      title="🤖 AI Visibility Citation Tracker & Autopilot Center"
-      subtitle="Track brand citations across ChatGPT, Claude, Perplexity, & Gemini + weekly proof reports."
+      title="AI visibility"
+      subtitle="Whether AI answer engines mention your store when someone asks what to buy."
+      primaryAction={{
+        content: busy ? "Asking the engines…" : "Run a check",
+        loading: busy,
+        disabled: !configured,
+        onAction: () => submit({}, { method: "post" }),
+      }}
     >
-      <BlockStack gap="500">
-        {statusMessage && (
-          <Banner title="Notification Sent" tone="success" onDismiss={() => setStatusMessage(null)}>
-            <p>{statusMessage}</p>
-          </Banner>
+      <Layout>
+        {!configured && (
+          <Layout.Section>
+            <Banner tone="warning" title="No AI provider is configured">
+              <p>
+                This feature works by actually asking ChatGPT, Claude and Perplexity a buying question and reading the
+                answer. No provider key is set on the server, so there is nothing to show. We will not display an
+                estimated score in its place.
+              </p>
+            </Banner>
+          </Layout.Section>
         )}
 
-        {/* AI Visibility Overview Grid */}
-        <Grid>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">Overall AI Visibility Score</Text>
-                <Text as="h3" variant="headingXl" tone="success">{aiReport.overallScore}/100</Text>
-                <ProgressBar progress={aiReport.overallScore} tone="success" size="small" />
-              </BlockStack>
+        {actionData?.result && (
+          <Layout.Section>
+            <Banner tone={actionData.result.ran ? "success" : "warning"} title={actionData.result.ran ? "Check complete" : "Check did not run"}>
+              <p>
+                {actionData.result.ran
+                  ? `We asked ${actionData.result.queriesAsked} question${actionData.result.queriesAsked === 1 ? "" : "s"} across ${actionData.result.callsMade} engine calls. Your store was mentioned ${actionData.result.citations} time${actionData.result.citations === 1 ? "" : "s"}.`
+                  : actionData.result.reason}
+              </p>
+            </Banner>
+          </Layout.Section>
+        )}
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">This week on {shopDomain}</Text>
+              <Text as="p">{weeklyReport.emailBody}</Text>
+              <InlineStack gap="200">
+                <Badge tone="success">{`${weeklyReport.verified} verified`}</Badge>
+                <Badge tone="info">{`${weeklyReport.pending} awaiting check`}</Badge>
+                <Badge tone="warning">{`${weeklyReport.notDetected} not detected`}</Badge>
+                {weeklyReport.verificationRate !== null && (
+                  <Badge>{`${weeklyReport.verificationRate}% of checks passed`}</Badge>
+                )}
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+        {configured && (
+          <Layout.Section>
+            <Card>
+              <InlineStack gap="800" wrap>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Checks run</Text>
+                  <Text as="p" variant="heading2xl">{aiReport.totalChecks}</Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Times you were mentioned</Text>
+                  <Text as="p" variant="heading2xl">{aiReport.citedCount}</Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Mention rate</Text>
+                  <Text as="p" variant="heading2xl">
+                    {aiReport.citationRate === null ? "—" : `${aiReport.citationRate}%`}
+                  </Text>
+                </BlockStack>
+                <BlockStack gap="100">
+                  <Text as="p" variant="bodySm" tone="subdued">Engines configured</Text>
+                  <Text as="p" variant="heading2xl">{aiReport.configuredEngines.length}</Text>
+                </BlockStack>
+              </InlineStack>
             </Card>
-          </Grid.Cell>
+          </Layout.Section>
+        )}
 
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">7-Day Verified Changes</Text>
-                <Text as="h3" variant="headingXl">{weeklyReport.totalVerifiedByProofEngine}</Text>
-                <Badge tone="success">100% STOREFRONT VERIFIED</Badge>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-
-          <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-            <Card padding="400">
-              <BlockStack gap="200">
-                <Text as="span" variant="bodyMd" tone="subdued">Search Traffic Growth</Text>
-                <Text as="h3" variant="headingXl" tone="success">{weeklyReport.trafficGrowthPercentage}</Text>
-                <Text as="p" variant="bodySm" tone="subdued">Week-over-week Google impressions</Text>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-        </Grid>
-
-        {/* Autopilot & Weekly Reports Card */}
-        <Card padding="500">
-          <BlockStack gap="400">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">⚡ Automated Autopilot & Proof Reporting</Text>
-              <Badge tone={autopilotEnabled ? "success" : "attention"}>
-                {autopilotEnabled ? "AUTOPILOT ACTIVE (SUGGEST MODE)" : "AUTOPILOT PAUSED"}
-              </Badge>
-            </InlineStack>
-            <Text as="p" variant="bodySm">
-              Autopilot automatically optimizes new products and enqueues live Proof Engine HTML verification.
-              First 7 days run in <strong>Suggest Mode</strong> for merchant approval before auto-applying.
-            </Text>
-            <Divider />
-
-            <InlineStack gap="300" align="space-between">
-              <Button
-                variant={autopilotEnabled ? "secondary" : "primary"}
-                onClick={() => setAutopilotEnabled(!autopilotEnabled)}
+        <Layout.Section>
+          <Card padding="0">
+            {!aiReport.hasData ? (
+              <EmptyState heading="No checks have been run yet" image="">
+                <p>
+                  When you run a check we ask each configured engine a buying question built from your own product
+                  types, then record whether your store was named in the answer.
+                </p>
+              </EmptyState>
+            ) : (
+              <IndexTable
+                resourceName={{ singular: "check", plural: "checks" }}
+                itemCount={aiReport.recentQueries.length}
+                selectable={false}
+                headings={[
+                  { title: "Question asked" },
+                  { title: "Engine" },
+                  { title: "You were mentioned" },
+                  { title: "Who else appeared" },
+                  { title: "Checked" },
+                ]}
               >
-                {autopilotEnabled ? "Pause Autopilot" : "Enable Autopilot"}
-              </Button>
-              <Button variant="primary" loading={isSending} onClick={handleSendWhatsApp}>
-                📱 Send Weekly WhatsApp Report (India Mode)
-              </Button>
-            </InlineStack>
-          </BlockStack>
-        </Card>
-
-        {/* AI Citation Tracker Table */}
-        <Card padding="0">
-          <Box padding="500"><BlockStack gap="300">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">🌐 AI Search Engine Citation Matrix</Text>
-              <Badge tone="info">PERPLEXITY • CHATGPT • CLAUDE • GEMINI</Badge>
-            </InlineStack>
-          </BlockStack></Box>
-
-          <IndexTable
-            resourceName={{ singular: "scan", plural: "scans" }}
-            itemCount={aiReport.scans.length}
-            headings={[
-              { title: "Target Search Query" },
-              { title: "ChatGPT (GPT-4o)" },
-              { title: "Claude 3.5" },
-              { title: "Perplexity AI" },
-              { title: "Google Gemini" },
-              { title: "AI Score" },
-            ]}
-            selectable={false}
-          >
-            {citationRowsMarkup}
-          </IndexTable>
-        </Card>
-      </BlockStack>
+                {aiReport.recentQueries.map((q, index) => (
+                  <IndexTable.Row id={`${q.query}-${index}`} key={`${q.query}-${index}`} position={index}>
+                    <IndexTable.Cell><Text as="span">{q.query}</Text></IndexTable.Cell>
+                    <IndexTable.Cell><Text as="span">{q.engine}</Text></IndexTable.Cell>
+                    <IndexTable.Cell>
+                      <Badge tone={q.cited ? "success" : "warning"}>{q.cited ? "Yes" : "No"}</Badge>
+                    </IndexTable.Cell>
+                    <IndexTable.Cell>
+                      <Text as="span" tone="subdued">{q.competitors.slice(0, 4).join(", ") || "—"}</Text>
+                    </IndexTable.Cell>
+                    <IndexTable.Cell>
+                      <Text as="span" tone="subdued">{new Date(q.checkedAt).toLocaleDateString()}</Text>
+                    </IndexTable.Cell>
+                  </IndexTable.Row>
+                ))}
+              </IndexTable>
+            )}
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }

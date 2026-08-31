@@ -12,23 +12,53 @@ export interface SchemaConfig {
   localBusinessSchema: boolean;
 }
 
+/**
+ * Looks at a REAL product page and reports whether the theme or another app is
+ * already emitting Product schema.
+ *
+ * If the page could not be fetched we return checked:false. The previous version
+ * was called with a hardcoded /products/sample-product URL, which 404s on every
+ * real store, so it always reported "no conflict" and our schema would have been
+ * enabled on top of the theme's - producing exactly the duplicate structured data
+ * described in 01-PRODUCT.md Gap 3.
+ */
 export async function detectSchemaConflicts(shopDomain: string, productUrl: string) {
   const parsed = await fetchAndParsePage(productUrl);
-  const existingProductSchema = parsed.jsonLdBlocks.find((b) => b["@type"] === "Product");
 
-  if (existingProductSchema) {
-    console.log(`[Schema Conflict Detector] Product schema already emitted by theme/app for ${productUrl}. ProofSEO Product schema will stay DISABLED by default to prevent duplicate schema penalties.`);
+  if (!parsed.isReachable) {
     return {
+      checked: false,
+      hasConflict: false,
+      conflictSource: null as string | null,
+      existingFields: [] as string[],
+      checkedUrl: productUrl,
+      reason: `We could not load ${productUrl} (HTTP ${parsed.statusCode}), so we cannot tell whether your theme already outputs Product schema. Ours stays off until we can.`,
+    };
+  }
+
+  const existing = parsed.jsonLdBlocks.find((b) => {
+    const t = (b as any)?.["@type"];
+    return Array.isArray(t) ? t.includes("Product") : t === "Product";
+  });
+
+  if (existing) {
+    return {
+      checked: true,
       hasConflict: true,
-      conflictSource: "Theme / Existing App",
-      existingFields: Object.keys(existingProductSchema),
+      conflictSource: "Your theme or another app",
+      existingFields: Object.keys(existing),
+      checkedUrl: productUrl,
+      reason: "Product schema is already on this page. Adding ours would create duplicate structured data, so ours stays off.",
     };
   }
 
   return {
+    checked: true,
     hasConflict: false,
-    conflictSource: null,
-    existingFields: [],
+    conflictSource: null as string | null,
+    existingFields: [] as string[],
+    checkedUrl: productUrl,
+    reason: "No Product schema found on this page.",
   };
 }
 

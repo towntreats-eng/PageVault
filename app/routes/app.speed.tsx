@@ -81,10 +81,17 @@ export default function SpeedPage() {
         <Text as="span" fontWeight="bold" tone="critical">{link.sourceUrl}</Text>
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Text as="span" tone="success">{link.targetUrl}</Text>
+        {link.suggestedTarget ? (
+          <BlockStack gap="050">
+            <Text as="span">{link.suggestedTarget}</Text>
+            <Text as="span" tone="subdued" variant="bodySm">{`suggested — ${link.suggestionConfidence} confidence`}</Text>
+          </BlockStack>
+        ) : (
+          <Text as="span" tone="subdued">No close match — choose a target below</Text>
+        )}
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Badge tone="critical">404 NOT FOUND</Badge>
+        <Badge tone="critical">{`HTTP ${link.statusCode}`}</Badge>
       </IndexTable.Cell>
       <IndexTable.Cell>
         {link.fixed ? (
@@ -98,8 +105,8 @@ export default function SpeedPage() {
 
   return (
     <Page
-      title="🚀 301 Redirect Manager & Speed Diagnostic"
-      subtitle="Handle-change detection, 404 broken link finder & GraphQL 301 redirect manager."
+      title="Redirects & 404s"
+      subtitle="Broken URLs found by the crawler, with a suggested target where one is close enough to be safe."
       primaryAction={{
         content: isFixing ? "Applying 301 Redirects..." : "Scan & Auto-Fix 404 Redirects",
         loading: isFixing,

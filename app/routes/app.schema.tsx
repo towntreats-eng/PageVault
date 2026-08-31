@@ -19,20 +19,58 @@ import { authenticate } from "../shopify.server";
 import { generateProductJsonLd, detectSchemaConflicts } from "../services/schema_markup.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const targetUrl = `https://${session.shop}/products/sample-product`;
+  const { admin, session } = await authenticate.admin(request);
+  const { executeShopifyGraphQL } = await import("../services/graphql.server");
 
+  // Check a real product page, not a placeholder URL.
+  const res: any = await executeShopifyGraphQL(
+    admin,
+    `query firstProduct {
+      products(first: 1, sortKey: UPDATED_AT, reverse: true) {
+        edges {
+          node {
+            title
+            handle
+            description
+            featuredImage { url }
+            variants(first: 1) { edges { node { sku availableForSale price } } }
+            priceRangeV2 { minVariantPrice { amount currencyCode } }
+          }
+        }
+      }
+    }`
+  );
+
+  const product = res?.data?.products?.edges?.[0]?.node ?? null;
+
+  if (!product) {
+    return json({
+      conflict: {
+        checked: false,
+        hasConflict: false,
+        conflictSource: null,
+        existingFields: [],
+        checkedUrl: "",
+        reason: "This store has no products yet, so there is no page to check.",
+      },
+      sampleJsonLd: null,
+      shopDomain: session.shop,
+    });
+  }
+
+  const targetUrl = `https://${session.shop}/products/${product.handle}`;
   const conflict = await detectSchemaConflicts(session.shop, targetUrl);
 
+  const variant = product.variants?.edges?.[0]?.node;
   const sampleJsonLd = generateProductJsonLd({
-    title: "Luxury Silk Evening Dress",
-    description: "Handcrafted pure silk dress with elegant silhouette.",
+    title: product.title,
+    description: (product.description || "").slice(0, 300),
     url: targetUrl,
-    imageUrl: `https://${session.shop}/products/silk-evening-dress.jpg`,
-    price: "199.00",
-    currency: "USD",
-    sku: "SILK-DRS-01",
-    inStock: true,
+    imageUrl: product.featuredImage?.url,
+    price: product.priceRangeV2?.minVariantPrice?.amount ?? variant?.price ?? "0",
+    currency: product.priceRangeV2?.minVariantPrice?.currencyCode ?? "USD",
+    sku: variant?.sku ?? "",
+    inStock: Boolean(variant?.availableForSale),
   });
 
   return json({ conflict, sampleJsonLd, shopDomain: session.shop });

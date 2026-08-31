@@ -89,43 +89,96 @@ export async function handleProductHandleChange(
 }
 
 /**
- * Task 4.3 - Scans and lists 404 Broken Links with 1-Click Fix
+ * 404 report, built from what the crawler actually found.
+ * The previous version returned two invented broken links ("summer-collection-old",
+ * "vintage-leather-boots") whenever the store had none.
  */
 export async function getBrokenLinksReport(shopDomain: string) {
-  const links = await prisma.brokenLink.findMany({
-    where: { shop_domain: shopDomain },
-    orderBy: { created_at: "desc" },
-    take: 50,
+  // Anything the crawler fetched and got a 4xx/5xx for is a real broken URL.
+  const broken = await prisma.pageRecord.findMany({
+    where: { shop_domain: shopDomain, status_code: { gte: 400 } },
+    orderBy: { last_crawled_at: "desc" },
+    take: 200,
   });
 
-  if (links.length === 0) {
-    // Return sample baseline broken links for immediate review
-    return [
-      {
-        id: "bl-1",
-        sourceUrl: "/collections/summer-collection-old",
-        targetUrl: "/collections/summer-sale",
-        statusCode: 404,
-        fixed: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "bl-2",
-        sourceUrl: "/products/vintage-leather-boots",
-        targetUrl: "/products/leather-oxford-shoes",
-        statusCode: 404,
-        fixed: true,
-        createdAt: new Date(),
-      },
-    ];
+  const live = await prisma.pageRecord.findMany({
+    where: { shop_domain: shopDomain, status_code: { gte: 200, lt: 400 } },
+    select: { url: true },
+    take: 2000,
+  });
+  const liveUrls = live.map((l) => l.url);
+
+  const existing = await prisma.brokenLink.findMany({
+    where: { shop_domain: shopDomain },
+    orderBy: { created_at: "desc" },
+    take: 200,
+  });
+  const fixedByPath = new Map(existing.map((e) => [e.source_url, e]));
+
+  return broken.map((b) => {
+    let path = b.url;
+    try {
+      path = new URL(b.url).pathname;
+    } catch {
+      /* keep raw */
+    }
+    const record = fixedByPath.get(path);
+    const suggestion = suggestRedirectTarget(b.url, liveUrls);
+    return {
+      id: b.id,
+      sourceUrl: path,
+      statusCode: b.status_code,
+      // A suggestion, clearly separate from a decision. Null means we have nothing
+      // sensible to propose - we do not quietly point it at /collections/all.
+      suggestedTarget: record?.target_url ?? suggestion.target,
+      suggestionConfidence: record?.target_url ? "chosen by you" : suggestion.confidence,
+      fixed: Boolean(record?.fixed),
+      lastSeenAt: b.last_crawled_at,
+    };
+  });
+}
+
+/**
+ * Picks the closest live URL by handle similarity. Returns null rather than
+ * guessing when nothing is close - a blanket redirect to the homepage is a
+ * soft-404 in Google's eyes and is never the default here.
+ */
+export function suggestRedirectTarget(
+  brokenUrl: string,
+  liveUrls: string[]
+): { target: string | null; confidence: "high" | "low" | "none" } {
+  let brokenPath: string;
+  try {
+    brokenPath = new URL(brokenUrl).pathname;
+  } catch {
+    brokenPath = brokenUrl;
   }
 
-  return links.map((l) => ({
-    id: l.id,
-    sourceUrl: l.source_url,
-    targetUrl: l.target_url || "/collections/all",
-    statusCode: l.status_code,
-    fixed: l.fixed,
-    createdAt: l.created_at,
-  }));
+  const handle = brokenPath.split("/").filter(Boolean).pop() ?? "";
+  if (!handle) return { target: null, confidence: "none" };
+
+  const tokens = handle.split("-").filter((t) => t.length > 2);
+  if (tokens.length === 0) return { target: null, confidence: "none" };
+
+  let best: { url: string; score: number } | null = null;
+  for (const url of liveUrls) {
+    let livePath: string;
+    try {
+      livePath = new URL(url).pathname;
+    } catch {
+      continue;
+    }
+    if (livePath === brokenPath) continue;
+
+    const liveHandle = livePath.split("/").filter(Boolean).pop() ?? "";
+    const liveTokens = new Set(liveHandle.split("-"));
+    const overlap = tokens.filter((t) => liveTokens.has(t)).length;
+    const sameType = livePath.split("/")[1] === brokenPath.split("/")[1];
+    const score = overlap / tokens.length + (sameType ? 0.25 : 0);
+
+    if (!best || score > best.score) best = { url: livePath, score };
+  }
+
+  if (!best || best.score < 0.5) return { target: null, confidence: "none" };
+  return { target: best.url, confidence: best.score >= 0.9 ? "high" : "low" };
 }

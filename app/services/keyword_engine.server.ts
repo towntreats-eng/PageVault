@@ -1,24 +1,39 @@
 import prisma from "../db.server";
+import { fetchSearchAnalytics } from "./gsc.server";
+
+/**
+ * Keyword engine.
+ *
+ * v1 gets its numbers from the merchant's own Search Console data — real
+ * impressions and real average positions for the queries their store is already
+ * seen for. Third-party search volume and difficulty need a paid provider
+ * (DataForSEO / Semrush); until a key is configured those fields stay 0 and the
+ * UI must show them as unknown, not as a number.
+ *
+ * The previous implementation hardcoded volume 1800 / difficulty 28 for every
+ * keyword, invented rank movements (18 -> 12 -> 4), returned two fictional
+ * keywords for every store, displayed a UUID as the keyword term, wrote fake
+ * RankSnapshot rows with position 14 and invented competitor domains, and
+ * charged the shop's budget for SERP API calls that were never made.
+ */
 
 export interface KeywordResult {
   id: string;
   term: string;
   market: string;
   language: string;
+  /** 0 = unknown. A provider is needed for real volume; do not render 0 as "no searches". */
   volume: number;
   cpc: number;
   difficulty: number;
   intent: "transactional" | "informational" | "navigational";
-  winnability: "winnable_now" | "winnable_6m" | "aspirational";
-  explanation: string;
+  winnability: "winnable_now" | "winnable_6m" | "aspirational" | "unknown";
+  source: string;
 }
 
-/**
- * Task 5B.1 - DataForSEO & LLM Spend Metering (AiBudget)
- * Enforces per-shop monthly data budget cap per 09-PRICING-AND-COSTS.md §9
- */
+/** Per-shop monthly spend cap. See 03-ARCHITECTURE.md §9. */
 export async function trackDataSpend(shopDomain: string, dataCostUsd: number, llmCostUsd = 0) {
-  const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+  const currentMonth = new Date().toISOString().substring(0, 7);
 
   const budget = await prisma.aiBudget.upsert({
     where: { shop_domain: shopDomain },
@@ -36,27 +51,29 @@ export async function trackDataSpend(shopDomain: string, dataCostUsd: number, ll
   });
 
   const totalSpend = budget.dataforseo_spend_usd + budget.llm_spend_usd;
-  if (totalSpend > budget.budget_cap_usd) {
-    console.warn(`[AiBudget Warning] Shop ${shopDomain} reached budget cap ($${totalSpend.toFixed(2)}/$${budget.budget_cap_usd}).`);
-    return { capped: true, totalSpend };
-  }
-
-  return { capped: false, totalSpend };
+  return { capped: totalSpend > budget.budget_cap_usd, totalSpend, cap: budget.budget_cap_usd };
 }
 
-/**
- * Task 5B.4 - Winnability Scoring Engine
- * Computes Winnability Score from Keyword Difficulty vs Store Authority
- */
-export function calculateWinnability(difficulty: number, storeAuthority = 35): "winnable_now" | "winnable_6m" | "aspirational" {
+export async function isOverBudget(shopDomain: string) {
+  const budget = await prisma.aiBudget.findUnique({ where: { shop_domain: shopDomain } });
+  if (!budget) return false;
+  return budget.dataforseo_spend_usd + budget.llm_spend_usd >= budget.budget_cap_usd;
+}
+
+export function calculateWinnability(
+  difficulty: number,
+  storeAuthority = 35
+): "winnable_now" | "winnable_6m" | "aspirational" | "unknown" {
+  if (!difficulty) return "unknown";
   if (difficulty <= storeAuthority + 10) return "winnable_now";
   if (difficulty <= storeAuthority + 25) return "winnable_6m";
   return "aspirational";
 }
 
 /**
- * Task 5B.5 - Assignment Engine
- * Enforces EXACTLY ONE primary keyword per URL per market (DB Unique Constraint)
+ * Assigns one primary keyword to one URL per market.
+ * No metrics are invented here. Volume and difficulty stay 0 until a data
+ * provider fills them; position comes from Search Console via refreshRanksFromGsc().
  */
 export async function assignPrimaryKeyword(
   shopDomain: string,
@@ -65,162 +82,166 @@ export async function assignPrimaryKeyword(
   keywordTerm: string,
   market = "US"
 ) {
-  // Upsert keyword record
+  const term = keywordTerm.trim().toLowerCase();
+  if (!term) throw new Error("Keyword cannot be empty.");
+
   const keyword = await prisma.keyword.upsert({
-    where: {
-      term_market: {
-        term: keywordTerm,
-        market,
-      },
-    },
+    where: { term_market: { term, market } },
     update: {},
     create: {
-      term: keywordTerm,
+      term,
       market,
-      volume: 1800,
-      cpc: 1.45,
-      difficulty: 28,
+      volume: 0,
+      cpc: 0,
+      difficulty: 0,
       intent: "transactional",
-      winnability: "winnable_now",
+      winnability: "unknown",
+      source: "merchant",
     },
   });
 
-  // DB Unique Constraint on [resource_gid, market, role='primary'] prevents cannibalisation
-  const assignment = await prisma.keywordAssignment.upsert({
-    where: {
-      resource_gid_market_role: {
-        resource_gid: resourceGid,
-        market,
-        role: "primary",
+  // The unique constraint on [resource_gid, market, role] is what enforces
+  // one primary keyword per URL per market.
+  return prisma.keywordAssignment.upsert({
+    where: { resource_gid_market_role: { resource_gid: resourceGid, market, role: "primary" } },
+    update: { keyword_id: keyword.id, url },
+    create: { shop_domain: shopDomain, keyword_id: keyword.id, resource_gid: resourceGid, url, market, role: "primary" },
+  });
+}
+
+/**
+ * Pulls real average positions from Search Console and stores them as rank
+ * snapshots. This is the only function that may create a RankSnapshot.
+ */
+export async function refreshRanksFromGsc(shopDomain: string) {
+  const gsc = await fetchSearchAnalytics(shopDomain, { days: 7, rowLimit: 1000 });
+  if (!gsc.available) {
+    return { updated: 0, connected: gsc.connected, error: gsc.error ?? null };
+  }
+
+  const assignments = await prisma.keywordAssignment.findMany({ where: { shop_domain: shopDomain } });
+  if (assignments.length === 0) return { updated: 0, connected: true, error: null };
+
+  const keywords = await prisma.keyword.findMany({
+    where: { id: { in: assignments.map((a) => a.keyword_id) } },
+  });
+  const termById = new Map(keywords.map((k) => [k.id, k.term]));
+
+  let updated = 0;
+  for (const a of assignments) {
+    const term = termById.get(a.keyword_id);
+    if (!term) continue;
+
+    const match = gsc.rows.find(
+      (r) => r.query.toLowerCase() === term && r.pageUrl.replace(/\/$/, "") === a.url.replace(/\/$/, "")
+    );
+    if (!match) continue;
+
+    await prisma.rankSnapshot.create({
+      data: {
+        assignment_id: a.id,
+        market: a.market,
+        device: "desktop",
+        position: Math.round(match.position),
+        ai_overview_present: false, // unknown from GSC; never guessed
+        top10_domains_json: null,
       },
-    },
-    update: {
-      keyword_id: keyword.id,
-      url,
-    },
-    create: {
-      shop_domain: shopDomain,
-      keyword_id: keyword.id,
-      resource_gid: resourceGid,
-      url,
-      market,
-      role: "primary",
-    },
-  });
+    });
+    updated++;
+  }
 
-  // Task 5B.9 & 5B.10: Record initial rank snapshot (Standard Queue SERP API)
-  await prisma.rankSnapshot.create({
-    data: {
-      assignment_id: assignment.id,
-      market,
-      device: "desktop",
-      position: 14, // Initial D0 rank baseline
-      ai_overview_present: true,
-      top10_domains_json: JSON.stringify(["amazon.com", "nordstrom.com", "macys.com"]),
-    },
-  });
-
-  // Track $0.0006 SERP API cost
-  await trackDataSpend(shopDomain, 0.0006 + 0.0006); // SERP + AI Overview
-
-  return assignment;
+  return { updated, connected: true, error: null };
 }
 
-/**
- * Task 5B.7 - Keyword-aware copy generator with STUFFING CHECK
- * Rejects unnatural keyword repetition per 10-KEYWORD-ENGINE.md §4.1
- */
-export function generateKeywordAwareTitle(productTitle: string, keyword: string, shopName: string): { title: string; passedStuffingCheck: boolean } {
-  // Ensure keyword appears ONCE, naturally
-  const candidate = `${productTitle} - ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} | ${shopName}`;
-
-  // Stuffing Check: Count occurrences of keyword in candidate
-  const occurrences = (candidate.toLowerCase().match(new RegExp(keyword.toLowerCase(), "g")) || []).length;
-  const passedStuffingCheck = occurrences === 1 && candidate.length <= 60;
-
-  return {
-    title: candidate,
-    passedStuffingCheck,
-  };
+export interface AssignedKeywordRow {
+  id: string;
+  term: string;
+  market: string;
+  url: string;
+  volume: number;
+  difficulty: number;
+  winnability: string;
+  /** null = we have not measured this yet. Never rendered as a position. */
+  latestPosition: number | null;
+  previousPosition: number | null;
+  measuredAt: string | null;
 }
 
-/**
- * Task 5B.12 - Content Brief Generator from SERP data
- */
-export function generateContentBrief(keyword: string, market = "US") {
-  return {
-    targetKeyword: keyword,
-    market,
-    searchIntent: "Informational & Transactional",
-    suggestedWordCount: "1,200 - 1,500 words",
-    requiredSubtopics: [
-      `What to look for when buying ${keyword}`,
-      `Top materials & durability comparison`,
-      `Styling & care instructions`,
-    ],
-    peopleAlsoAskQuestions: [
-      `Is ${keyword} worth the investment?`,
-      `How do you style ${keyword} for formal occasions?`,
-    ],
-    recommendedInternalLinks: [
-      "Link to main collection page with anchor text",
-      "Link to top 3 related products",
-    ],
-  };
-}
-
-export async function getAssignedKeywordsWithRanks(shopDomain: string) {
+export async function getAssignedKeywordsWithRanks(shopDomain: string): Promise<AssignedKeywordRow[]> {
   const assignments = await prisma.keywordAssignment.findMany({
     where: { shop_domain: shopDomain },
     orderBy: { assigned_at: "desc" },
-    take: 50,
+    take: 100,
   });
+  if (assignments.length === 0) return [];
 
-  if (assignments.length === 0) {
-    return [
-      {
-        id: "kw-1",
-        term: "silk evening dress",
-        market: "US",
-        url: `https://${shopDomain}/products/silk-evening-dress`,
-        volume: 4800,
-        difficulty: 32,
-        winnability: "winnable_now",
-        positionD0: 18,
-        positionD7: 12,
-        positionD28: 4,
-        aiOverviewPresent: true,
-        explanation: "High search volume (4,800/mo) with low difficulty (32/100) matching your store's authority.",
-      },
-      {
-        id: "kw-2",
-        term: "leather oxford shoes men",
-        market: "US",
-        url: `https://${shopDomain}/products/leather-oxford-shoes`,
-        volume: 3200,
-        difficulty: 28,
-        winnability: "winnable_now",
-        positionD0: 14,
-        positionD7: 9,
-        positionD28: 5,
-        aiOverviewPresent: true,
-        explanation: "Transactional intent term with low competition. 100% winnable for product page.",
-      },
-    ];
+  const [keywords, snapshots] = await Promise.all([
+    prisma.keyword.findMany({ where: { id: { in: assignments.map((a) => a.keyword_id) } } }),
+    prisma.rankSnapshot.findMany({
+      where: { assignment_id: { in: assignments.map((a) => a.id) } },
+      orderBy: { checked_at: "desc" },
+    }),
+  ]);
+
+  const kwById = new Map(keywords.map((k) => [k.id, k]));
+
+  return assignments.map((a) => {
+    const kw = kwById.get(a.keyword_id);
+    const mine = snapshots.filter((s) => s.assignment_id === a.id);
+    return {
+      id: a.id,
+      term: kw?.term ?? "(keyword missing)",
+      market: a.market,
+      url: a.url,
+      volume: kw?.volume ?? 0,
+      difficulty: kw?.difficulty ?? 0,
+      winnability: kw?.winnability ?? "unknown",
+      latestPosition: mine[0]?.position ?? null,
+      previousPosition: mine[1]?.position ?? null,
+      measuredAt: mine[0]?.checked_at.toISOString() ?? null,
+    };
+  });
+}
+
+/**
+ * Keyword-aware title with a stuffing check.
+ * Real logic, kept as it was.
+ */
+export function generateKeywordAwareTitle(
+  productTitle: string,
+  keyword: string,
+  shopName: string
+): { title: string; passedStuffingCheck: boolean } {
+  const candidate = `${productTitle} - ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} | ${shopName}`;
+  const escaped = keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const occurrences = (candidate.toLowerCase().match(new RegExp(escaped, "g")) || []).length;
+  return { title: candidate, passedStuffingCheck: occurrences === 1 && candidate.length <= 60 };
+}
+
+/**
+ * Content brief built from the store's OWN related Search Console queries.
+ * Returns available:false when there is no data — it does not invent subtopics.
+ */
+export async function generateContentBrief(shopDomain: string, keyword: string, market = "US") {
+  const gsc = await fetchSearchAnalytics(shopDomain, { days: 90, rowLimit: 1000 });
+  if (!gsc.available) {
+    return {
+      available: false,
+      reason: gsc.connected
+        ? gsc.error ?? "Search Console did not return data."
+        : "Connect Google Search Console to build a brief from queries your store is really seen for.",
+      targetKeyword: keyword,
+      market,
+      relatedQueries: [] as { query: string; impressions: number; position: number }[],
+    };
   }
 
-  return assignments.map((a) => ({
-    id: a.id,
-    term: a.keyword_id,
-    market: a.market,
-    url: a.url,
-    volume: 2400,
-    difficulty: 30,
-    winnability: "winnable_now",
-    positionD0: 14,
-    positionD7: 9,
-    positionD28: 5,
-    aiOverviewPresent: true,
-    explanation: "Assigned primary keyword per 1-primary-per-URL constraint.",
-  }));
+  const term = keyword.toLowerCase();
+  const related = gsc.rows
+    .filter((r) => r.query.includes(term) && r.query !== term)
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, 25)
+    .map((r) => ({ query: r.query, impressions: r.impressions, position: r.position }));
+
+  return { available: true, targetKeyword: keyword, market, relatedQueries: related, range: gsc.range };
 }
