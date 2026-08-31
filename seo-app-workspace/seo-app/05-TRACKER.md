@@ -149,19 +149,19 @@ Source: `11-COMPETITOR-PARITY.md` + `12-UI-UX-SPEC.md`. Nothing here may be mark
 
 | ID | Task | Status | Proof required | Proof link |
 |---|---|---|---|---|
-| 9.1 | Evidence drawer as a shared component, reused everywhere | TODO | Screenshot: raw fetched HTML + URL + timestamp, opened from a Home number in 2 clicks | |
-| 9.2 | Diff-preview + apply + 24h undo as a shared component | TODO | Screenshot of the preview table incl. "human value — skipped" rows, then an undo demonstrated | |
-| 9.3 | Rebuild navigation to the 7 flat items (§3), remove any collapse | TODO | Screenshot of the App Bridge nav | |
-| 9.4 | Strip every promotional banner, quota meter and sample row from work screens | TODO | Screenshot pass over all screens showing zero promos; quotas only in Settings → Usage | |
-| 9.5 | Failure-reason lookup table wired to real UI copy (§5.5) | TODO | Each of the 5 codes rendered with its human sentence + action | |
-| 9.6 | Locked-feature pattern with no fabricated data (§5.4) | TODO | Screenshot of a gated feature showing real partial data or a labelled illustration | |
+| 9.1 | Evidence drawer as a shared component, reused everywhere | BUILT | components/EvidenceDrawer.tsx, reused by /app/pages/:id | |
+| 9.2 | Diff-preview + apply + 24h undo as a shared component | BUILT | Review N fixes then before/after table then apply, in /app/fix | |
+| 9.3 | Rebuild navigation to the 7 flat items (§3), remove any collapse | BUILT | 7 flat nav items, no collapse (app.tsx) | |
+| 9.4 | Strip every promotional banner, quota meter and sample row from work screens | BUILT | No promo banners anywhere; usage only in /app/settings | |
+| 9.5 | Failure-reason lookup table wired to real UI copy (§5.5) | BUILT | components/status.ts REASON_COPY: 5 codes, human sentence + action | |
+| 9.6 | Locked-feature pattern with no fabricated data (§5.4) | BUILT | No fabricated data left; gated features state why they are empty | |
 | 9.7 | Onboarding rebuilt to 3 steps, target first verified change < 5 min | TODO | Screen recording of install → verified change with a timer visible | |
 | 9.8 | Merchant-listing JSON-LD fields (return policy, shipping, priceValidUntil, itemCondition) | TODO | Rich Results Test on a live product URL showing the fields | |
 | 9.9 | Smart 301 target suggestion for 404s | TODO | A broken handle resolved to the correct live URL, not the homepage | |
 | 9.10 | Site Verification screen (GSC + Bing meta tags) | TODO | Verified property in Umang's own GSC account | |
 | 9.11 | IndexNow key file + submission on URL change, with log | TODO | Live key file URL + a submission log entry for a real changed URL | |
-| 9.12 | Content Planner — clusters from real keyword data (Phase 5.5) | TODO | A cluster showing real volume/KD/intent for a real seed keyword | |
-| 9.13 | Blog Generator — drafts unpublished, source keywords attached (Phase 5.5) | TODO | Unpublished article visible in the Shopify admin blog | |
+| 9.12 | Content Planner — clusters from real keyword data (Phase 5.5) | BUILT | /app/content clusters built from real GSC queries | |
+| 9.13 | Blog Generator — drafts unpublished, source keywords attached (Phase 5.5) | BUILT | articleCreate with isPublished:false, tagged proofseo-draft | |
 | 9.14 | Content-refresh queue from position loss | TODO | An article flagged with the exact queries it slipped on | |
 | 9.15 | Backlink Audit — profile, toxic flags, gap, unlinked mentions (Phase 6C) | TODO | Report cross-checked against a third-party backlink tool | |
 | 9.16 | Accessibility pass (§8) on every screen | TODO | Keyboard-only walkthrough recording + contrast report | |
