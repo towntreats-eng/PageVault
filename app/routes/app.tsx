@@ -24,13 +24,12 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/meta">Pages &amp; meta</Link>
-        <Link to="/app/images">Image alt text</Link>
-        <Link to="/app/schema">Structured data</Link>
-        <Link to="/app/speed">Redirects &amp; 404s</Link>
+        <Link to="/app/fix">Fix</Link>
+        <Link to="/app/pages">Pages</Link>
         <Link to="/app/analytics">Keywords</Link>
+        <Link to="/app/content">Content</Link>
         <Link to="/app/additional">AI visibility</Link>
-        <Link to="/app/billing">Plan</Link>
+        <Link to="/app/settings">Settings</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

@@ -161,7 +161,7 @@ export default function MetaTagsPage() {
 
   return (
     <Page
-      title="📝 Meta Title & Description Optimizer (ProofEngine)"
+      title="Meta tag templates"
       subtitle="Bulk template engine with Manual-Value Protection & 24h Undo Support."
       primaryAction={{
         content: isSaving ? "Saving Templates..." : "Save Meta Templates",

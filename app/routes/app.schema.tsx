@@ -91,7 +91,7 @@ export default function SchemaPage() {
 
   return (
     <Page
-      title="🏷️ JSON-LD Schema Markup Manager (Conflict Aware)"
+      title="Structured data"
       subtitle="Theme app extension embed block with zero runtime JS & duplicate schema protection."
       primaryAction={{
         content: "Save Schema Settings",

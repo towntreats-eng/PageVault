@@ -60,7 +60,7 @@ export default function BillingPage() {
 
   return (
     <Page
-      title="💳 Transparent Pricing & Subscription Plans"
+      title="Plans"
       subtitle="Gate by scale and markets. The Proof Engine & core metadata tools are available on every plan."
     >
       <BlockStack gap="500">
