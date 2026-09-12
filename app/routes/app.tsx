@@ -24,6 +24,7 @@ export default function App() {
         <Link to="/app" rel="home">
           Home
         </Link>
+        <Link to="/app/meta">Meta & AI</Link>
         <Link to="/app/fix">Fix</Link>
         <Link to="/app/pages">Pages</Link>
         <Link to="/app/analytics">Keywords</Link>

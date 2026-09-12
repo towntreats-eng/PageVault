@@ -1,20 +1,20 @@
 {
-  "appName": "Shop Forge — Conversion Suite",
-  "tagline": "All-in-One D2C Conversion Suite & Ready-Made Page Library",
-  "valueProposition": "Replace 5 separate apps with one high-converting store OS. Includes courier pincode & COD checker, photo reviews, customer wishlist, back-in-stock alerts, product bundles, and sticky urgency ATC inside theme-matched page designs.",
+  "appName": "ProofSEO — Verified SEO & AI Visibility",
+  "tagline": "Prove Every SEO Change on Live HTML & Rank in AI Search Engines",
+  "valueProposition": "Other SEO apps show vanity scores while your changes fail silently on the storefront. ProofSEO verifies every meta tag, schema, and ALT text directly against your live rendered HTML. Plus, unlock visibility for AI Shopping engines like ChatGPT, Perplexity, Gemini, and Google AI Overviews with zero storefront code bloat.",
   "features": [
-    "Courier Pincode & COD Delivery Checker with SLA calculation (<50ms speed)",
-    "Customer Photo Reviews & Moderation Queue with review-request emails",
-    "Customer Wishlist & Back-In-Stock Restock Alerts",
-    "Frequently Bought Together Bundles & Upsell Cards",
-    "Sticky Add-To-Cart Bar with Real Inventory Urgency (no fake urgency)",
-    "50 Ready-Made Page & Section Designs (100% Token-Driven)"
+    "Live-Page Proof Engine: Verifies every single title, description, and schema change on your live storefront HTML",
+    "Zero-Bloat JSON-LD Rich Snippets: Product, Breadcrumb, Merchant Return Policy & Shipping schema with 0kb runtime JS",
+    "AI Shopping & Search Visibility: Product completeness auditing for ChatGPT Search, Perplexity, and Google AI Overviews",
+    "AI Citation Engine: Weekly audits tracking whether ChatGPT, Claude, and Perplexity recommend your store for buying queries",
+    "Search Console Intent Engine: Real measured keyword positions, CTR opportunity finder, and keyword cannibalisation alerts",
+    "IndexNow Instant Pings: Instantly notifies Bing, Yandex, and Seznam whenever products or collections are updated",
+    "Smart 301 Redirects: Automatic handle-change redirect creation and intelligent 404 target matching"
   ],
-  "howItWorks": "1. Install Shop Forge on your store in 1 click.\n2. Browse 50 ready-made page and section conversion designs.\n3. Add blocks directly into your active theme via Shopify Theme Editor.\n4. Enable Store OS features (pincode checker, photo reviews, wishlist, bundles) with zero coding.",
-  "pricingExplanation": "Unambiguous Subscription Tiers & Order Volume Caps:\n- Free: $0/mo (₹0/mo) — 5 static designs, no watermark.\n- Starter: $9/mo (₹799/mo) — up to 100 orders/mo. Includes India Essentials Pack.\n- Growth: $29/mo (₹2,499/mo) — up to 500 orders/mo. Includes Photo Reviews, Wishlist, Stock Alerts, Bundles & Sticky ATC.\n- Scale: $59/mo (₹4,999/mo) — up to 2,000 orders/mo. Includes A/B Testing & Analytics.\n- Pro: $99/mo (₹8,999/mo) — unlimited orders/mo. Includes dedicated support.",
+  "howItWorks": "1. Install ProofSEO on your store in 1 click.\n2. Run a full store crawl to uncover real missing metadata, schema conflicts, and AI completeness gaps.\n3. Apply optimizations safely with Manual-Value Protection that never overwrites human-written copy.\n4. The Proof Engine automatically fetches your live storefront HTML to prove that every change actually landed.",
+  "pricingExplanation": "Outcome-Based Tiers (No Image Quotas, No Ads, No Theme Bloat):\n- Free: $0/mo — Up to 50 products, 10 tracked keywords, live Proof Engine verification.\n- Starter: $19/mo — Up to 500 products, 100 keywords, automated meta templates & JSON-LD schema (14-day trial).\n- Growth: $49/mo — Up to 2,500 products, 500 keywords, 3 market regions, AI Citation Tracker & GSC analytics (14-day trial).\n- Pro: $129/mo — Unlimited products, 2,000 keywords, unlimited markets, priority verification (14-day trial).",
   "compedReviewerAccount": {
-    "compedTier": "pro",
-    "unlimitedOrders": true,
-    "instructions": "Log in to the app to automatically receive full comped Pro tier permissions."
+    "compedTier": "pro_129",
+    "instructions": "Log in to the app to automatically receive full comped Pro tier permissions on development and partner stores."
   }
 }

@@ -85,19 +85,31 @@ export async function buildTopicClusters(shopDomain: string, seed?: string) {
   return { available: true, connected: true, reason: null, clusters: clusters.slice(0, 30), range: gsc.range };
 }
 
-function firstConfiguredProvider() {
+import { isGeminiConfigured, generateAiArticleContent } from "./gemini.server";
+
+export async function firstConfiguredProvider(shopDomain?: string) {
+  if (await isGeminiConfigured(shopDomain)) return "gemini" as const;
   if (process.env.ANTHROPIC_API_KEY) return "anthropic" as const;
   if (process.env.OPENAI_API_KEY) return "openai" as const;
   return null;
 }
 
-export function contentGenerationAvailable() {
-  return firstConfiguredProvider() !== null;
+export async function contentGenerationAvailable(shopDomain?: string) {
+  return (await firstConfiguredProvider(shopDomain)) !== null;
 }
 
-async function writeArticleBody(cluster: TopicCluster, shopName: string): Promise<string | null> {
-  const provider = firstConfiguredProvider();
+async function writeArticleBody(cluster: TopicCluster, shopName: string, shopDomain?: string): Promise<string | null> {
+  const provider = await firstConfiguredProvider(shopDomain);
   if (!provider) return null;
+
+  if (provider === "gemini") {
+    return await generateAiArticleContent({
+      topic: cluster.label,
+      queries: cluster.queries,
+      shopName,
+      shopDomain,
+    });
+  }
 
   const queries = cluster.queries.map((q) => `- ${q.query} (${q.impressions} impressions, avg position ${q.position})`).join("\n");
   const prompt = `You are writing a blog article for the Shopify store "${shopName}".
@@ -166,7 +178,7 @@ export async function generateArticleDraft(
   shopDomain: string,
   cluster: TopicCluster
 ): Promise<DraftResult> {
-  if (!contentGenerationAvailable()) {
+  if (!(await contentGenerationAvailable(shopDomain))) {
     return { created: false, reason: "No AI provider key is configured on the server." };
   }
   if (await isOverBudget(shopDomain)) {
@@ -185,7 +197,7 @@ export async function generateArticleDraft(
     return { created: false, reason: "This store has no blog. Create one in Shopify first (Content → Blog posts)." };
   }
 
-  const body = await writeArticleBody(cluster, shopName);
+  const body = await writeArticleBody(cluster, shopName, shopDomain);
   await trackDataSpend(shopDomain, 0, 0.01);
   if (!body) return { created: false, reason: "The AI provider did not return an article." };
 

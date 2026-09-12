@@ -3,6 +3,7 @@ node_modules
 
 /.cache
 /build
+build-*
 /app/build
 /public/build/
 /public/_dev
@@ -13,6 +14,7 @@ database.sqlite
 
 .env
 .env.*
+!.env.example
 
 yarn.lock
 pnpm-lock.yaml

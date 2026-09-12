@@ -80,6 +80,7 @@ model SeoSetting {
   auto_compress_images    Boolean  @default(true)
   auto_jsonld_schema      Boolean  @default(true)
   auto_meta_tags          Boolean  @default(true)
+  gemini_api_key          String?
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
 }

@@ -11,6 +11,7 @@ import {
   InlineStack,
   Banner,
   Divider,
+  Box,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import { executeShopifyGraphQL } from "../services/graphql.server";
@@ -126,14 +127,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const failing = checks.filter((c) => c.status === "fail").length;
   const unknown = checks.filter((c) => c.status === "unknown").length;
 
-  return json({ checks, failing, unknown, shopDomain: session.shop });
+  const listing = await import("../data/app_listing_submission.json").then((m) => m.default);
+
+  return json({ checks, failing, unknown, shopDomain: session.shop, listing });
 };
 
 export default function ReadinessPage() {
-  const { checks, failing, unknown, shopDomain } = useLoaderData<typeof loader>();
+  const { checks, failing, unknown, shopDomain, listing } = useLoaderData<typeof loader>();
 
   return (
-    <Page title="Submission readiness" subtitle={`Checked against ${shopDomain} just now`}>
+    <Page title="Submission readiness & Listing" subtitle={`Checked against ${shopDomain} just now`}>
       <Layout>
         <Layout.Section>
           <Banner
@@ -156,6 +159,8 @@ export default function ReadinessPage() {
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">Automated Technical Compliance</Text>
+              <Divider />
               {checks.map((c, i) => (
                 <BlockStack key={c.name} gap="200">
                   {i > 0 && <Divider />}
@@ -173,6 +178,55 @@ export default function ReadinessPage() {
             </BlockStack>
           </Card>
         </Layout.Section>
+
+        {/* App Store Listing Details Card */}
+        {listing && (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text as="h2" variant="headingMd">Shopify App Store Listing Details</Text>
+                  <Badge tone="success">Ready for Partner Dashboard</Badge>
+                </InlineStack>
+                <Divider />
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">App Name</Text>
+                  <Text as="p" fontWeight="bold">{listing.appName}</Text>
+                </BlockStack>
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">Tagline</Text>
+                  <Text as="p">{listing.tagline}</Text>
+                </BlockStack>
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">Value Proposition</Text>
+                  <Text as="p">{listing.valueProposition}</Text>
+                </BlockStack>
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">Key Features</Text>
+                  <BlockStack gap="100">
+                    {listing.features.map((feat: string, idx: number) => (
+                      <Text as="p" key={idx}>✓ {feat}</Text>
+                    ))}
+                  </BlockStack>
+                </BlockStack>
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">Pricing Structure</Text>
+                  <Box>
+                    <Text as="p" tone="subdued" variant="bodySm">
+                      {listing.pricingExplanation}
+                    </Text>
+                  </Box>
+                </BlockStack>
+                <BlockStack gap="150">
+                  <Text as="p" variant="headingSm">Shopify App Reviewer Instructions</Text>
+                  <Text as="p" tone="subdued" variant="bodySm">
+                    {listing.compedReviewerAccount.instructions}
+                  </Text>
+                </BlockStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        )}
       </Layout>
     </Page>
   );

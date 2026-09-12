@@ -17,12 +17,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const seed = url.searchParams.get("seed") ?? undefined;
 
-  const [planner, drafts] = await Promise.all([
+  const [planner, drafts, canGenerate] = await Promise.all([
     buildTopicClusters(session.shop, seed),
     listGeneratedDrafts(admin).catch(() => []),
+    contentGenerationAvailable(session.shop),
   ]);
 
-  return json({ planner, drafts, canGenerate: contentGenerationAvailable(), seed: seed ?? "" });
+  return json({ planner, drafts, canGenerate, seed: seed ?? "" });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

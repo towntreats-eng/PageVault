@@ -59,6 +59,7 @@ export async function updateSeoSettings(shopDomain: string, data: Partial<{
   auto_compress_images: boolean;
   auto_jsonld_schema: boolean;
   auto_meta_tags: boolean;
+  gemini_api_key: string | null;
 }>) {
   return await prisma.seoSetting.upsert({
     where: { shop_domain: shopDomain },
@@ -269,7 +270,7 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
   const { writeResourceSeoMetafield } = await import("./meta_writer.server");
 
   let shopName = shopDomain.replace(".myshopify.com", "");
-  const written: { gid: string; field: string; value: string }[] = [];
+  const written: { gid: string; field: string; value: string; targetUrl: string }[] = [];
   const skippedHumanValue: string[] = [];
   const failed: { gid: string; message: string }[] = [];
   let productsScanned = 0;
@@ -313,7 +314,7 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
             const res: any = await writeResourceSeoMetafield(
               admin, shopDomain, p.id, "title_tag", value, targetUrl, "bulk"
             );
-            if (res?.success) written.push({ gid: p.id, field: "title_tag", value });
+            if (res?.success) written.push({ gid: p.id, field: "title_tag", value, targetUrl });
             else if (res?.protected) skippedHumanValue.push(p.id);
           } catch (err) {
             failed.push({ gid: p.id, message: (err as Error).message });
@@ -328,7 +329,7 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
               const res: any = await writeResourceSeoMetafield(
                 admin, shopDomain, p.id, "description_tag", value, targetUrl, "bulk"
               );
-              if (res?.success) written.push({ gid: p.id, field: "description_tag", value });
+              if (res?.success) written.push({ gid: p.id, field: "description_tag", value, targetUrl });
               else if (res?.protected) skippedHumanValue.push(p.id);
             } catch (err) {
               failed.push({ gid: p.id, message: (err as Error).message });
@@ -342,6 +343,17 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
       cursor = conn.pageInfo.endCursor;
     }
 
+    // Task 9.11: Automatically notify search engines via IndexNow for instant indexing
+    const updatedUrls = Array.from(new Set(written.map((w) => w.targetUrl).filter(Boolean)));
+    if (updatedUrls.length > 0) {
+      try {
+        const { submitToIndexNow } = await import("./indexnow.server");
+        await submitToIndexNow(shopDomain, updatedUrls);
+      } catch (idxErr) {
+        console.warn("[IndexNow auto-submit]", (idxErr as Error).message);
+      }
+    }
+
     await prisma.event.create({
       data: {
         shop_domain: shopDomain,
@@ -351,6 +363,7 @@ export async function runFullAutoSeoOptimization(admin: any, shopDomain: string)
           written: written.length,
           skippedHumanValue: skippedHumanValue.length,
           failed: failed.length,
+          indexNowSubmitted: updatedUrls.length,
         }),
       },
     });
