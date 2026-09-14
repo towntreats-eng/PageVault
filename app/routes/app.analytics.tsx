@@ -16,9 +16,16 @@ import {
   TextField,
   EmptyState,
   Link as PolarisLink,
+  Box,
+  Divider,
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
-import { getGscConnectionStatus, getCtrOpportunities, getCannibalisationIssues } from "../services/gsc.server";
+import {
+  getGscConnectionStatus,
+  getCtrOpportunities,
+  getCannibalisationIssues,
+  get28DayBeforeAfterReporting,
+} from "../services/gsc.server";
 import {
   getAssignedKeywordsWithRanks,
   assignPrimaryKeyword,
@@ -29,14 +36,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
 
-  const [gscStatus, ctr, cannibalisation, assignedKeywords] = await Promise.all([
+  const [gscStatus, ctr, cannibalisation, assignedKeywords, beforeAfter] = await Promise.all([
     getGscConnectionStatus(shopDomain),
     getCtrOpportunities(shopDomain),
     getCannibalisationIssues(shopDomain),
     getAssignedKeywordsWithRanks(shopDomain),
+    get28DayBeforeAfterReporting(shopDomain),
   ]);
 
-  return json({ gscStatus, ctr, cannibalisation, assignedKeywords, shopDomain });
+  return json({ gscStatus, ctr, cannibalisation, assignedKeywords, beforeAfter, shopDomain });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -66,7 +74,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function KeywordsPage() {
-  const { gscStatus, ctr, cannibalisation, assignedKeywords, shopDomain } = useLoaderData<typeof loader>();
+  const { gscStatus, ctr, cannibalisation, assignedKeywords, beforeAfter, shopDomain } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -199,6 +207,197 @@ export default function KeywordsPage() {
                 })}
               </IndexTable>
             )}
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <BlockStack gap="100">
+                <Text as="h2" variant="headingMd">
+                  28-Day Before / After CTR Performance
+                </Text>
+                <Text as="p" tone="subdued" variant="bodySm">
+                  Measured impact on pages where ProofSEO applied and verified meta tags or content changes.
+                  Comparing the 28 days before each modification against the 28 days following it.
+                </Text>
+              </BlockStack>
+
+              {!beforeAfter.connected ? (
+                <Text as="p" tone="subdued">
+                  Connect Search Console above to measure live before/after search CTR and impressions.
+                </Text>
+              ) : !beforeAfter.available ? (
+                <Text as="p" tone="subdued">
+                  {beforeAfter.error || "Search Console data is currently unavailable."}
+                </Text>
+              ) : (
+                <BlockStack gap="400">
+                  {beforeAfter.storewide && (
+                    <Box
+                      padding="300"
+                      background="bg-surface-secondary"
+                      borderRadius="200"
+                    >
+                      <BlockStack gap="200">
+                        <InlineStack align="space-between">
+                          <Text as="span" variant="headingSm">Storewide 28-Day Search Trajectory</Text>
+                          <Text as="span" tone="subdued" variant="bodyXs">
+                            {beforeAfter.storewide.currentPeriod.startDate} to {beforeAfter.storewide.currentPeriod.endDate} vs previous 28 days
+                          </Text>
+                        </InlineStack>
+                        <InlineStack gap="600" wrap>
+                          <BlockStack gap="050">
+                            <Text as="span" tone="subdued" variant="bodySm">Total Clicks</Text>
+                            <InlineStack gap="150" blockAlign="center">
+                              <Text as="span" variant="headingMd">{beforeAfter.storewide.currentPeriod.clicks}</Text>
+                              <Badge tone={beforeAfter.storewide.delta.clicks >= 0 ? "success" : "warning"}>
+                                {beforeAfter.storewide.delta.clicks >= 0
+                                  ? `+${beforeAfter.storewide.delta.clicksPercent}%`
+                                  : `${beforeAfter.storewide.delta.clicksPercent}%`}
+                              </Badge>
+                            </InlineStack>
+                          </BlockStack>
+
+                          <BlockStack gap="050">
+                            <Text as="span" tone="subdued" variant="bodySm">Impressions</Text>
+                            <InlineStack gap="150" blockAlign="center">
+                              <Text as="span" variant="headingMd">{beforeAfter.storewide.currentPeriod.impressions.toLocaleString()}</Text>
+                              <Badge tone={beforeAfter.storewide.delta.impressions >= 0 ? "success" : "warning"}>
+                                {beforeAfter.storewide.delta.impressions >= 0
+                                  ? `+${beforeAfter.storewide.delta.impressionsPercent}%`
+                                  : `${beforeAfter.storewide.delta.impressionsPercent}%`}
+                              </Badge>
+                            </InlineStack>
+                          </BlockStack>
+
+                          <BlockStack gap="050">
+                            <Text as="span" tone="subdued" variant="bodySm">Average CTR</Text>
+                            <InlineStack gap="150" blockAlign="center">
+                              <Text as="span" variant="headingMd">{beforeAfter.storewide.currentPeriod.ctr}%</Text>
+                              <Badge tone={beforeAfter.storewide.delta.ctr >= 0 ? "success" : "warning"}>
+                                {beforeAfter.storewide.delta.ctr >= 0
+                                  ? `+${beforeAfter.storewide.delta.ctr}%`
+                                  : `${beforeAfter.storewide.delta.ctr}%`}
+                              </Badge>
+                            </InlineStack>
+                          </BlockStack>
+
+                          <BlockStack gap="050">
+                            <Text as="span" tone="subdued" variant="bodySm">Average Position</Text>
+                            <InlineStack gap="150" blockAlign="center">
+                              <Text as="span" variant="headingMd">#{beforeAfter.storewide.currentPeriod.position}</Text>
+                              <Badge tone={beforeAfter.storewide.delta.position >= 0 ? "success" : "warning"}>
+                                {beforeAfter.storewide.delta.position >= 0
+                                  ? `+${beforeAfter.storewide.delta.position}`
+                                  : `${beforeAfter.storewide.delta.position}`}
+                              </Badge>
+                            </InlineStack>
+                          </BlockStack>
+                        </InlineStack>
+                      </BlockStack>
+                    </Box>
+                  )}
+
+                  <Divider />
+
+                  <BlockStack gap="200">
+                    <Text as="h3" variant="headingSm">Applied Changes Impact Breakdown</Text>
+                    {beforeAfter.pages.length === 0 ? (
+                      <EmptyState heading="No applied changes on Search Console URLs yet" image="">
+                        <p>
+                          {beforeAfter.message ||
+                            "As meta titles, descriptions, and content are applied and verified by Proof Engine, their measured 28-day before/after CTR performance will appear here."}
+                        </p>
+                      </EmptyState>
+                    ) : (
+                      <IndexTable
+                        resourceName={{ singular: "change", plural: "changes" }}
+                        itemCount={beforeAfter.pages.length}
+                        selectable={false}
+                        headings={[
+                          { title: "Page" },
+                          { title: "Change Applied" },
+                          { title: "Applied" },
+                          { title: "Before CTR" },
+                          { title: "After CTR" },
+                          { title: "CTR Impact" },
+                          { title: "Traffic" },
+                          { title: "Proof Status" },
+                        ]}
+                      >
+                        {beforeAfter.pages.map((p, index) => {
+                          const displayPath = p.pageUrl.replace(/^https?:\/\/[^\/]+/, "") || p.pageUrl;
+                          return (
+                            <IndexTable.Row id={p.changeId} key={p.changeId} position={index}>
+                              <IndexTable.Cell>
+                                <PolarisLink url={p.pageUrl} target="_blank">
+                                  {displayPath}
+                                </PolarisLink>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <BlockStack gap="050">
+                                  <Text as="span" fontWeight="semibold">
+                                    {p.field === "title_tag"
+                                      ? "Meta Title"
+                                      : p.field === "description_tag"
+                                      ? "Meta Description"
+                                      : p.field}
+                                  </Text>
+                                  <Text as="span" variant="bodyXs" tone="subdued" truncate>
+                                    {p.afterValue}
+                                  </Text>
+                                </BlockStack>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <Text as="span">{new Date(p.appliedAt).toLocaleDateString()}</Text>
+                                <Text as="p" variant="bodyXs" tone="subdued">
+                                  {p.daysSinceChange === 0 ? "Today" : `${p.daysSinceChange}d ago`}
+                                </Text>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <Text as="span">{p.before.ctr}%</Text>
+                                <Text as="p" variant="bodyXs" tone="subdued">
+                                  {p.before.clicks} clicks
+                                </Text>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <Text as="span">{p.after.ctr}%</Text>
+                                <Text as="p" variant="bodyXs" tone="subdued">
+                                  {p.after.clicks} clicks
+                                </Text>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                {p.status === "accumulating" ? (
+                                  <Badge tone="info">Accumulating (D+{p.daysSinceChange})</Badge>
+                                ) : (
+                                  <Badge tone={p.delta.ctr > 0 ? "success" : p.delta.ctr < 0 ? "warning" : undefined}>
+                                    {p.delta.ctr >= 0 ? `+${p.delta.ctr}%` : `${p.delta.ctr}%`}
+                                  </Badge>
+                                )}
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <Text as="span">
+                                  {p.delta.clicks >= 0 ? `+${p.delta.clicks}` : p.delta.clicks} clicks
+                                </Text>
+                                <Text as="p" variant="bodyXs" tone="subdued">
+                                  {p.delta.impressions >= 0 ? `+${p.delta.impressions}` : p.delta.impressions} impr
+                                </Text>
+                              </IndexTable.Cell>
+                              <IndexTable.Cell>
+                                <Badge tone={p.verificationResult === "PASS" ? "success" : "attention"}>
+                                  {p.verificationResult === "PASS" ? "Verified Live" : p.verificationResult}
+                                </Badge>
+                              </IndexTable.Cell>
+                            </IndexTable.Row>
+                          );
+                        })}
+                      </IndexTable>
+                    )}
+                  </BlockStack>
+                </BlockStack>
+              )}
+            </BlockStack>
           </Card>
         </Layout.Section>
 

@@ -81,7 +81,7 @@ Only **one** task may be `WIP` at a time.
 | 5.3 | Cannibalisation detection | REWRITTEN 31 Aug | Invented. Now real query/page overlap from GSC | app/services/gsc.server.ts |
 | 5.4 | Content gap finder | REWRITTEN 31 Aug | Invented. Now real: impressions with position > 20 | app/services/gsc.server.ts |
 | 5.5 | Internal linking + orphan pages | REWRITTEN 31 Aug | Invented orphan pages. Now derived from real query overlap; orphan detection still to do | app/services/gsc.server.ts |
-| 5.6 | 28-day before/after CTR reporting | TODO | Not implemented. No before/after comparison exists | app/routes/app.analytics.tsx |
+| 5.6 | 28-day before/after CTR reporting | BUILT | 28-day before/after comparison engine on storewide & per-applied-change URLs | app/routes/app.analytics.tsx |
 
 ## Phase 5B — Keyword engine + rank tracking (global)
 
