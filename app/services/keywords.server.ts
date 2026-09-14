@@ -58,9 +58,16 @@ export class GoogleSuggestKeywordProvider implements KeywordProvider {
 
     // If Google Suggest returned fewer than 5 (or offline), augment with semantic patterns
     if (uniqueKeywords.size < 5) {
-      const semantic = new LocalSemanticKeywordProvider();
-      const fallbackList = await semantic.expandSeedKeyword(seed);
-      return fallbackList;
+      const suffixes = [
+        "review", "guide", "best", "buy online", "vs",
+        "for beginners", "tips", "how to use", "alternatives", "near me",
+        "price", "discount", "sale", "comparison", "benefits",
+      ];
+      for (const suffix of suffixes) {
+        const candidate = `${clean} ${suffix}`;
+        if (candidate.length > 3) uniqueKeywords.add(candidate);
+        if (uniqueKeywords.size >= 15) break;
+      }
     }
 
     const results: KeywordMetric[] = [];

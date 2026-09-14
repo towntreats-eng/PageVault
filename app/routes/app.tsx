@@ -23,6 +23,7 @@ export default function App() {
       <NavMenu>
         <Link to="/app" rel="home">Dashboard</Link>
         <Link to="/app/products">Products</Link>
+        <Link to="/app/images">Image SEO</Link>
         <Link to="/app/keywords">Keywords</Link>
         <Link to="/app/competitors">Competitors</Link>
         <Link to="/app/theme">Theme Copy</Link>

@@ -160,6 +160,9 @@ export default function Dashboard() {
                 <Button variant="primary" size="large" url="/app/products">
                   ⚡ Auto-Optimize Store Products
                 </Button>
+                <Button size="large" url="/app/images">
+                  🖼️ Image SEO & Compression
+                </Button>
                 <Button size="large" url="/app/gsc">
                   Connect Google Search Console
                 </Button>

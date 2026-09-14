@@ -65,33 +65,83 @@ async function getApiKey(shopDomain: string): Promise<string | null> {
   return shop?.geminiApiKey || process.env.GEMINI_API_KEY || null;
 }
 
+const GEMINI_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+];
+
 async function callGemini(apiKey: string, prompt: string, systemPrompt?: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const maxRetries = 3;
+  let lastError: Error | null = null;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.3, // Low temperature for factual precision
-      },
-    }),
-  });
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.3,
+            },
+          }),
+        });
+
+        clearTimeout(timeout);
+
+        if (response.status === 404) {
+          // Model not available, try next model
+          console.warn(`[Gemini] Model ${model} returned 404, trying next model...`);
+          break;
+        }
+
+        if (response.status === 429 || response.status === 503) {
+          // Rate limited or overloaded, retry with backoff
+          const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+          console.warn(`[Gemini] ${model} returned ${response.status}, retrying in ${Math.round(delay)}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+        }
+
+        const json = await response.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+          throw new Error("Gemini returned an empty response.");
+        }
+
+        console.log(`[Gemini] Successfully used model: ${model}`);
+        return text;
+      } catch (err: any) {
+        lastError = err;
+        if (err.name === "AbortError") {
+          console.warn(`[Gemini] ${model} request timed out (attempt ${attempt + 1}/${maxRetries})`);
+          continue;
+        }
+        if (attempt < maxRetries - 1) {
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+      }
+    }
   }
 
-  const json = await response.json();
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini returned an empty response.");
-  }
-  return text;
+  throw lastError || new Error("All Gemini models failed after retries.");
 }
 
 export class AIService {
