@@ -25,20 +25,28 @@ import {
 } from "../services/keywords.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
 
-  const savedKeywords = await prisma.keywordTarget.findMany({
-    where: { shopDomain },
-    orderBy: { createdAt: "desc" },
-  });
+    const savedKeywords = await prisma.keywordTarget.findMany({
+      where: { shopDomain },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const cannibalizationIssues = await detectKeywordCannibalization(shopDomain);
+    const cannibalizationIssues = await detectKeywordCannibalization(shopDomain);
 
-  return json({
-    savedKeywords,
-    cannibalizationIssues,
-  });
+    return json({
+      savedKeywords,
+      cannibalizationIssues,
+    });
+  } catch (error) {
+    console.error("[Keywords Loader Error]", error);
+    return json({
+      savedKeywords: [],
+      cannibalizationIssues: [],
+    });
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

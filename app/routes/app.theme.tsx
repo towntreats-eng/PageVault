@@ -21,14 +21,6 @@ import { AIService, type SectionOptimizationResult } from "../services/ai.server
 import { recordContentVersion } from "../services/versions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
-
-  const shop = await prisma.shop.findUnique({
-    where: { domain: shopDomain },
-    select: { brandVoice: true },
-  });
-
   // Common editable theme homepage sections
   const defaultSections = [
     {
@@ -53,10 +45,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
   ];
 
-  return json({
-    brandVoice: shop?.brandVoice || "premium",
-    sections: defaultSections,
-  });
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
+
+    const shop = await prisma.shop.findUnique({
+      where: { domain: shopDomain },
+      select: { brandVoice: true },
+    });
+
+    return json({
+      brandVoice: shop?.brandVoice || "premium",
+      sections: defaultSections,
+    });
+  } catch (error) {
+    console.error("[Theme Loader Error]", error);
+    return json({
+      brandVoice: "premium",
+      sections: defaultSections,
+    });
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

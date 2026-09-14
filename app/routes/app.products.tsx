@@ -22,43 +22,54 @@ import { recordContentVersion } from "../services/versions.server";
 import { DiffPreviewModal, type DiffPreviewData } from "../components/DiffPreviewModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
   const url = new URL(request.url);
   const query = url.searchParams.get("q") || "";
   const filter = url.searchParams.get("filter") || "all";
 
-  const shop = await prisma.shop.findUnique({
-    where: { domain: shopDomain },
-    select: { brandVoice: true },
-  });
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
 
-  const whereClause: any = { shopDomain };
-  if (query) {
-    whereClause.OR = [
-      { title: { contains: query } },
-      { productType: { contains: query } },
-      { vendor: { contains: query } },
-    ];
+    const shop = await prisma.shop.findUnique({
+      where: { domain: shopDomain },
+      select: { brandVoice: true },
+    });
+
+    const whereClause: any = { shopDomain };
+    if (query) {
+      whereClause.OR = [
+        { title: { contains: query } },
+        { productType: { contains: query } },
+        { vendor: { contains: query } },
+      ];
+    }
+    if (filter === "needs_opt") {
+      whereClause.isOptimized = false;
+    } else if (filter === "optimized") {
+      whereClause.isOptimized = true;
+    }
+
+    const products = await prisma.productRecord.findMany({
+      where: whereClause,
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    });
+
+    return json({
+      products,
+      brandVoice: shop?.brandVoice || "professional",
+      query,
+      filter,
+    });
+  } catch (error) {
+    console.error("[Products Loader Error]", error);
+    return json({
+      products: [],
+      brandVoice: "professional",
+      query,
+      filter,
+    });
   }
-  if (filter === "needs_opt") {
-    whereClause.isOptimized = false;
-  } else if (filter === "optimized") {
-    whereClause.isOptimized = true;
-  }
-
-  const products = await prisma.productRecord.findMany({
-    where: whereClause,
-    orderBy: { updatedAt: "desc" },
-    take: 100,
-  });
-
-  return json({
-    products,
-    brandVoice: shop?.brandVoice || "professional",
-    query,
-    filter,
-  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

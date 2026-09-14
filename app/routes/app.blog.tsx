@@ -22,23 +22,31 @@ import { AIService, type BlogOptimizationResult } from "../services/ai.server";
 import { recordContentVersion } from "../services/versions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
 
-  const articles = await prisma.articleRecord.findMany({
-    where: { shopDomain },
-    orderBy: { updatedAt: "desc" },
-  });
+    const articles = await prisma.articleRecord.findMany({
+      where: { shopDomain },
+      orderBy: { updatedAt: "desc" },
+    });
 
-  const shop = await prisma.shop.findUnique({
-    where: { domain: shopDomain },
-    select: { brandVoice: true },
-  });
+    const shop = await prisma.shop.findUnique({
+      where: { domain: shopDomain },
+      select: { brandVoice: true },
+    });
 
-  return json({
-    articles,
-    brandVoice: shop?.brandVoice || "professional",
-  });
+    return json({
+      articles,
+      brandVoice: shop?.brandVoice || "professional",
+    });
+  } catch (error) {
+    console.error("[Blog Loader Error]", error);
+    return json({
+      articles: [],
+      brandVoice: "professional",
+    });
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

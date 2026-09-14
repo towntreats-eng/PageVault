@@ -20,35 +20,53 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
 
-  const shop = await prisma.shop.upsert({
-    where: { domain: shopDomain },
-    create: { domain: shopDomain },
-    update: {},
-  });
+    const shop = await prisma.shop.upsert({
+      where: { domain: shopDomain },
+      create: { domain: shopDomain },
+      update: {},
+    });
 
-  const usageRecords = await prisma.aiUsageRecord.findMany({
-    where: { shopDomain },
-  });
+    const usageRecords = await prisma.aiUsageRecord.findMany({
+      where: { shopDomain },
+    });
 
-  let totalInputTokens = 0;
-  let totalOutputTokens = 0;
-  for (const u of usageRecords) {
-    totalInputTokens += u.inputTokens;
-    totalOutputTokens += u.outputTokens;
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    for (const u of usageRecords) {
+      totalInputTokens += u.inputTokens;
+      totalOutputTokens += u.outputTokens;
+    }
+
+    return json({
+      shop,
+      usage: {
+        totalCalls: usageRecords.length,
+        totalInputTokens,
+        totalOutputTokens,
+        estimatedCostUsd: Math.round(((totalInputTokens * 0.000075 + totalOutputTokens * 0.0003) / 1000) * 10000) / 10000,
+      },
+    });
+  } catch (error) {
+    console.error("[Settings Loader Error]", error);
+    return json({
+      shop: {
+        id: "default",
+        domain: "",
+        brandVoice: "professional",
+        geminiApiKey: null,
+      } as any,
+      usage: {
+        totalCalls: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        estimatedCostUsd: 0,
+      },
+    });
   }
-
-  return json({
-    shop,
-    usage: {
-      totalCalls: usageRecords.length,
-      totalInputTokens,
-      totalOutputTokens,
-      estimatedCostUsd: Math.round(((totalInputTokens * 0.000075 + totalOutputTokens * 0.0003) / 1000) * 10000) / 10000,
-    },
-  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

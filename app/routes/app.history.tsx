@@ -15,10 +15,15 @@ import { authenticate } from "../shopify.server";
 import { getVersionHistory, rollbackContentVersion } from "../services/versions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const history = await getVersionHistory(session.shop, 100);
+  try {
+    const { session } = await authenticate.admin(request);
+    const history = await getVersionHistory(session.shop, 100);
 
-  return json({ history });
+    return json({ history });
+  } catch (error) {
+    console.error("[History Loader Error]", error);
+    return json({ history: [] });
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

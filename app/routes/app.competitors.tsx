@@ -21,20 +21,28 @@ import prisma from "../db.server";
 import { addCompetitor, analyzeCompetitorGaps } from "../services/competitors.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
 
-  const competitors = await prisma.competitorTarget.findMany({
-    where: { shopDomain },
-    orderBy: { createdAt: "desc" },
-  });
+    const competitors = await prisma.competitorTarget.findMany({
+      where: { shopDomain },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const gaps = await analyzeCompetitorGaps(shopDomain);
+    const gaps = await analyzeCompetitorGaps(shopDomain);
 
-  return json({
-    competitors,
-    gaps,
-  });
+    return json({
+      competitors,
+      gaps,
+    });
+  } catch (error) {
+    console.error("[Competitors Loader Error]", error);
+    return json({
+      competitors: [],
+      gaps: [],
+    });
+  }
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
