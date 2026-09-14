@@ -5,9 +5,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   provider = "sqlite"
   url      = "file:dev.sqlite"
@@ -31,4 +28,197 @@ model Session {
   emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id               String             @id @default(uuid())
+  domain           String             @unique
+  name             String?
+  email            String?
+  currency         String             @default("USD")
+  plan             String             @default("free") // free | starter | growth | pro
+  geminiApiKey     String?
+  brandVoice       String             @default("professional") // professional, friendly, premium, minimal, bold, technical, casual, custom
+  customVoiceRules String?
+  installedAt      DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  products         ProductRecord[]
+  collections      CollectionRecord[]
+  pages            PageRecord[]
+  articles         ArticleRecord[]
+  seoIssues        SeoIssue[]
+  keywords         KeywordTarget[]
+  competitors      CompetitorTarget[]
+  contentVersions  ContentVersion[]
+  jobs             OptimizationJob[]
+  aiUsage          AiUsageRecord[]
+}
+
+model ProductRecord {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  shopifyGid     String   @unique
+  title          String
+  description    String?
+  handle         String
+  productType    String?
+  vendor         String?
+  tags           String?
+  seoTitle       String?
+  seoDescription String?
+  imagesJson     String? // JSON array of { id, url, altText }
+  isOptimized    Boolean  @default(false)
+  lastScannedAt  DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([shopDomain])
+}
+
+model CollectionRecord {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  shopifyGid     String   @unique
+  title          String
+  description    String?
+  handle         String
+  seoTitle       String?
+  seoDescription String?
+  isOptimized    Boolean  @default(false)
+  lastScannedAt  DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([shopDomain])
+}
+
+model PageRecord {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  shopifyGid     String   @unique
+  title          String
+  body           String?
+  handle         String
+  seoTitle       String?
+  seoDescription String?
+  lastScannedAt  DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([shopDomain])
+}
+
+model ArticleRecord {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  shopifyGid     String   @unique
+  blogGid        String
+  title          String
+  body           String?
+  handle         String
+  author         String?
+  tags           String?
+  seoTitle       String?
+  seoDescription String?
+  lastScannedAt  DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([shopDomain])
+}
+
+model SeoIssue {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  resourceType   String // product | collection | page | article | theme
+  resourceGid    String
+  issueType      String // missing_meta_title | short_meta_desc | missing_alt | thin_content | duplicate_title
+  severity       String // critical | high | medium | low
+  title          String
+  description    String // What is wrong
+  impact         String // Why it matters
+  recommendedFix String // Recommended fix
+  isResolved     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([shopDomain, severity])
+  @@index([resourceGid])
+}
+
+model KeywordTarget {
+  id             String   @id @default(uuid())
+  shopDomain     String
+  shop           Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  keyword        String
+  searchIntent   String // informational | commercial | transactional | navigational
+  searchVolume   Int?
+  difficulty     Int?
+  cpc            Float?
+  targetUrl      String?
+  mappedResource String? // Resource GID
+  status         String   @default("opportunity") // opportunity | mapped | ranking
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([shopDomain, keyword])
+}
+
+model CompetitorTarget {
+  id                  String   @id @default(uuid())
+  shopDomain          String
+  shop                Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  domain              String
+  notes               String?
+  trackedKeywordsJson String? // JSON list of detected competitor keywords
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([shopDomain, domain])
+}
+
+model ContentVersion {
+  id           String    @id @default(uuid())
+  shopDomain   String
+  shop         Shop      @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  resourceType String // product | collection | page | article | theme_section
+  resourceGid  String
+  field        String // title | description | seo_title | seo_description | alt_text | full_snapshot
+  beforeValue  String
+  afterValue   String
+  reason       String? // Explanation of change
+  confidence   Int? // 0-100
+  appliedAt    DateTime  @default(now())
+  revertedAt   DateTime?
+
+  @@index([shopDomain, resourceGid])
+}
+
+model OptimizationJob {
+  id           String   @id @default(uuid())
+  shopDomain   String
+  shop         Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  jobType      String // bulk_product_optimize | store_scan | audit_run
+  status       String   @default("queued") // queued | processing | completed | failed | skipped
+  totalItems   Int      @default(0)
+  processed    Int      @default(0)
+  failed       Int      @default(0)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([shopDomain, status])
+}
+
+model AiUsageRecord {
+  id           String   @id @default(uuid())
+  shopDomain   String
+  shop         Shop     @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  actionType   String // product_rewrite | meta_generation | keyword_research | blog_draft
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([shopDomain, createdAt])
 }
