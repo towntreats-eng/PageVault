@@ -272,7 +272,7 @@ Every requirement from the specification is tracked below:
 
 | Bug ID | Description | Severity | Status | Fixed | Verified |
 |---|---|---|---|---|---|
-| None currently logged | Clean baseline | — | — | — | — |
+| BUG-001 | Application Error on dashboard due to missing Prisma migration SQL in production deployment | High | Fixed | ✓ | ✓ |
 
 ---
 
