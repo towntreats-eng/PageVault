@@ -13,11 +13,66 @@ export interface CompetitorGapItem {
 }
 
 export async function addCompetitor(shopDomain: string, domain: string, notes?: string) {
-  const cleanDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "");
+  // Sanitize domain: strip protocol, www, paths, queries
+  let cleanDomain = domain.trim().toLowerCase();
+  cleanDomain = cleanDomain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].split("?")[0];
 
-  // Generate sample seed niche keywords based on the domain name
-  const domainParts = cleanDomain.split(".")[0].split("-").filter(Boolean);
-  const sampleKeywords = domainParts.map((p) => `${p} online`).concat([`${cleanDomain.split(".")[0]} collection`]);
+  if (!cleanDomain || cleanDomain.length < 3) {
+    throw new Error("Invalid competitor domain entered.");
+  }
+
+  // Extract brand name from domain
+  const rawBrand = cleanDomain.split(".")[0];
+  const brandTitle = rawBrand.charAt(0).toUpperCase() + rawBrand.slice(1);
+
+  // Check store products to understand niche context
+  const products = await prisma.productRecord.findMany({
+    where: { shopDomain },
+    select: { title: true, productType: true },
+    take: 20,
+  });
+
+  const catalogContext = products.map((p) => `${p.title} ${p.productType || ""}`).join(" ").toLowerCase();
+  const isJewellery = /jewel|ring|diamond|gold|necklace|earring|pendant|silver|carat/i.test(`${cleanDomain} ${catalogContext}`);
+  const isBeauty = /skin|serum|oil|cream|beauty|lotion|scrub|cosmetic|fragrance|glow/i.test(`${cleanDomain} ${catalogContext}`);
+  const isFashion = /wear|apparel|dress|shirt|clothing|jacket|shoe|denim|leather/i.test(`${cleanDomain} ${catalogContext}`);
+
+  let nicheKeywords: string[] = [];
+  if (isJewellery) {
+    nicheKeywords = [
+      "diamond engagement rings",
+      "everyday gold pendants",
+      "18k gold drop earrings",
+      "solitaire diamond necklace",
+      "certified hallmarked gold jewellery",
+      "minimalist daily wear bracelets",
+    ];
+  } else if (isBeauty) {
+    nicheKeywords = [
+      "botanical nourishing body oil",
+      "hydrating barrier repair cream",
+      "brightening vitamin c serum",
+      "gentle antioxidant facial cleanser",
+      "organic floral face mist",
+      "exfoliating sugar body polish",
+    ];
+  } else if (isFashion) {
+    nicheKeywords = [
+      "organic cotton essential tees",
+      "tailored modern linen trousers",
+      "breathable everyday lightweight jackets",
+      "premium minimalist leather footwear",
+      "sustainable casual streetwear",
+    ];
+  } else {
+    nicheKeywords = [
+      `${brandTitle} top rated alternatives`,
+      `best ${brandTitle} style collections`,
+      "handcrafted premium home accents",
+      "sustainable lifestyle accessories",
+      "artisan crafted luxury essentials",
+    ];
+  }
 
   return await prisma.competitorTarget.upsert({
     where: { shopDomain_domain: { shopDomain, domain: cleanDomain } },
@@ -25,10 +80,11 @@ export async function addCompetitor(shopDomain: string, domain: string, notes?: 
       shopDomain,
       domain: cleanDomain,
       notes: notes || "",
-      trackedKeywordsJson: JSON.stringify(sampleKeywords),
+      trackedKeywordsJson: JSON.stringify(nicheKeywords),
     },
     update: {
       notes: notes || "",
+      trackedKeywordsJson: JSON.stringify(nicheKeywords),
     },
   });
 }

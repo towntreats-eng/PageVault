@@ -26,6 +26,7 @@ export default function App() {
         <Link to="/app/keywords">Keywords</Link>
         <Link to="/app/competitors">Competitors</Link>
         <Link to="/app/theme">Theme Copy</Link>
+        <Link to="/app/gsc">Google Search Console</Link>
         <Link to="/app/blog">Blog SEO</Link>
         <Link to="/app/history">History & Rollback</Link>
         <Link to="/app/settings">Settings</Link>

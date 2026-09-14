@@ -19,7 +19,7 @@ import {
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import {
-  LocalSemanticKeywordProvider,
+  GoogleSuggestKeywordProvider,
   detectKeywordCannibalization,
   type KeywordMetric,
 } from "../services/keywords.server";
@@ -61,7 +61,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: "Please provide a valid seed keyword." }, { status: 400 });
     }
 
-    const provider = new LocalSemanticKeywordProvider();
+    const provider = new GoogleSuggestKeywordProvider();
     const keywords = await provider.expandSeedKeyword(seed);
 
     return json({ actionType: "search_keywords", seed, keywords });

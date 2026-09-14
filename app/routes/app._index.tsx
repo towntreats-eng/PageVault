@@ -141,6 +141,33 @@ export default function Dashboard() {
           </Banner>
         )}
 
+        {/* 1-Click Store SEO Booster Hero Card */}
+        <Card background="bg-surface-secondary">
+          <BlockStack gap="300">
+            <InlineStack align="space-between" blockAlign="center">
+              <BlockStack gap="100">
+                <InlineStack gap="200" blockAlign="center">
+                  <Text as="h2" variant="headingLg" fontWeight="bold">
+                    ⚡ 1-Click Full Store SEO Booster
+                  </Text>
+                  <Badge tone="success">PRO AUTOMATION</Badge>
+                </InlineStack>
+                <Text as="p" tone="subdued">
+                  Automatically rewrite and optimize all product titles, Google SERP meta descriptions, structured HTML, and image ALTs across your entire catalog. Backed by 1-click instant rollback.
+                </Text>
+              </BlockStack>
+              <InlineStack gap="300">
+                <Button variant="primary" size="large" url="/app/products">
+                  ⚡ Auto-Optimize Store Products
+                </Button>
+                <Button size="large" url="/app/gsc">
+                  Connect Google Search Console
+                </Button>
+              </InlineStack>
+            </InlineStack>
+          </BlockStack>
+        </Card>
+
         {/* Top Summary Grid */}
         <Layout>
           {/* Main Health Score Card */}

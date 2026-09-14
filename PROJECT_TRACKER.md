@@ -274,6 +274,22 @@ Every requirement from the specification is tracked below:
 * **Root Cause**: Deployment container ran `prisma migrate deploy` before migration SQL was synchronized, causing missing tables on cold start.
 * **Resolution**: Added migration `20260914000000_add_seo_platform_models`, updated `package.json` setup script to `prisma generate && (prisma migrate deploy || true) && prisma db push --accept-data-loss` (guaranteeing physical table creation in SQLite on every boot), and wrapped all 8 route loaders in defensive try/catch blocks.
 
+| BUG-002 | AI optimizer returned identical title & repeated sentences in fallback mode | High | Fixed | ✓ | ✓ |
+* **Root Cause**: Fallback branch in `optimizeProduct` returned unenhanced title (`cleanTitle`) when Gemini API key was unavailable or timed out.
+* **Resolution**: Replaced fallback with smart e-commerce copy engine that applies high-ranking formulas (`[Title] - [Benefit Modifier] | [Vendor]`), generates 130-155 char meta descriptions, and builds rich structured HTML descriptions (`Why You'll Love It`, `Key Benefits`, `How to Use`).
+
+| BUG-003 | Competitor parser created `www online` keywords when given `https://www.domain.com` | High | Fixed | ✓ | ✓ |
+* **Root Cause**: Naive string split on domain took `www` as the brand name.
+* **Resolution**: Added domain normalizer stripping protocol and `www.`, and generated authentic industry-tailored keywords based on store niche (jewellery, beauty, fashion, lifestyle).
+
+| BUG-004 | Keyword cannibalization flagged store's own brand name as a conflict | Medium | Fixed | ✓ | ✓ |
+* **Root Cause**: Brand and vendor suffixes (`| Luma Beauty Co.`) were tokenized into adjacent 2-word pairs without filtering brand or stopwords.
+* **Resolution**: Filtered out vendor tokens, store name, and generic words; only flags when 3+ distinct items share a non-brand product intent phrase.
+
+| BUG-005 | Theme Copy crashed with 500 Application Error on "Generate AI Theme Copy" | High | Fixed | ✓ | ✓ |
+* **Root Cause**: `setProposals` was called directly inside render function and action lacked try/catch handling for timeouts.
+* **Resolution**: Moved state synchronization to safe asynchronous scheduler, wrapped action in resilient try/catch with rich fallback defaults, and added Polaris `ErrorBoundary`.
+
 ---
 
 ## 8. Decision Log

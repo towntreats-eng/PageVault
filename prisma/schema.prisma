@@ -37,11 +37,15 @@ model Shop {
   email            String?
   currency         String             @default("USD")
   plan             String             @default("free") // free | starter | growth | pro
-  geminiApiKey     String?
-  brandVoice       String             @default("professional") // professional, friendly, premium, minimal, bold, technical, casual, custom
-  customVoiceRules String?
-  installedAt      DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  geminiApiKey       String?
+  brandVoice         String             @default("professional") // professional, friendly, premium, minimal, bold, technical, casual, custom
+  customVoiceRules   String?
+  gscVerificationTag String?
+  gscRefreshToken    String?
+  gscSiteUrl         String?
+  gscConnectedAt     DateTime?
+  installedAt        DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   products         ProductRecord[]
   collections      CollectionRecord[]
   pages            PageRecord[]

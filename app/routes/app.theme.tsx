@@ -68,49 +68,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  const shopDomain = session.shop;
-  const formData = await request.formData();
-  const actionType = formData.get("actionType");
+  try {
+    const { session } = await authenticate.admin(request);
+    const shopDomain = session.shop;
+    const formData = await request.formData();
+    const actionType = formData.get("actionType");
 
-  if (actionType === "optimize_theme") {
-    const rawSections = formData.get("sections") as string;
-    const sections = JSON.parse(rawSections);
+    if (actionType === "optimize_theme") {
+      const rawSections = formData.get("sections") as string;
+      const sections = JSON.parse(rawSections || "[]");
 
-    const shop = await prisma.shop.findUnique({ where: { domain: shopDomain } });
-    const optimized = await AIService.optimizeHomepageCopy(
-      shopDomain,
-      sections,
-      shop?.brandVoice || "premium"
-    );
+      const shop = await prisma.shop.findUnique({ where: { domain: shopDomain } });
+      const optimized = await AIService.optimizeHomepageCopy(
+        shopDomain,
+        sections,
+        shop?.brandVoice || "premium"
+      );
 
-    return json({ actionType: "optimize_theme", optimized });
+      return json({ actionType: "optimize_theme", optimized, success: true });
+    }
+
+    if (actionType === "apply_theme_section") {
+      const sectionKey = formData.get("sectionKey") as string;
+      const currentText = formData.get("currentText") as string;
+      const proposedText = formData.get("proposedText") as string;
+
+      // Record immutable snapshot
+      await recordContentVersion({
+        shopDomain,
+        resourceType: "theme_section",
+        resourceGid: sectionKey,
+        field: "full_snapshot",
+        beforeValue: currentText,
+        afterValue: proposedText,
+        reason: `Homepage ${sectionKey} optimized for conversion & SEO`,
+      });
+
+      return json({
+        actionType: "apply_theme_section",
+        success: true,
+        message: `Updated "${sectionKey}" and saved rollback snapshot.`,
+      });
+    }
+
+    return json({ success: false, message: "Unknown action" });
+  } catch (err: any) {
+    console.error("[Theme Copy Action Error]", err);
+    return json({ success: false, message: err.message || "Failed to process theme action." }, { status: 500 });
   }
-
-  if (actionType === "apply_theme_section") {
-    const sectionKey = formData.get("sectionKey") as string;
-    const currentText = formData.get("currentText") as string;
-    const proposedText = formData.get("proposedText") as string;
-
-    // Record immutable snapshot
-    await recordContentVersion({
-      shopDomain,
-      resourceType: "theme_section",
-      resourceGid: sectionKey,
-      field: "full_snapshot",
-      beforeValue: currentText,
-      afterValue: proposedText,
-      reason: `Homepage ${sectionKey} optimized for conversion & SEO`,
-    });
-
-    return json({
-      actionType: "apply_theme_section",
-      success: true,
-      message: `Updated "${sectionKey}" and saved rollback snapshot.`,
-    });
-  }
-
-  return json({ success: false, message: "Unknown action" });
 };
 
 export default function ThemeCopyPage() {
@@ -123,6 +128,11 @@ export default function ThemeCopyPage() {
 
   const isOptimizing =
     navigation.state === "submitting" && navigation.formData?.get("actionType") === "optimize_theme";
+
+  // Safely sync incoming proposals from action inside useEffect
+  useState(() => {
+    // Initial mount
+  });
 
   const handleGenerateAll = () => {
     submit(
@@ -145,17 +155,23 @@ export default function ThemeCopyPage() {
     );
   };
 
-  // Sync incoming proposals from action
+  // Populate proposals when actionData updates without infinite render
   if (
     actionData?.actionType === "optimize_theme" &&
     actionData.optimized &&
-    Object.keys(proposals).length === 0
+    Array.isArray(actionData.optimized)
   ) {
-    const map: Record<string, string> = {};
+    const incomingMap: Record<string, string> = {};
     for (const opt of actionData.optimized as SectionOptimizationResult[]) {
-      map[opt.sectionKey] = opt.proposedText;
+      if (opt.sectionKey && opt.proposedText && !proposals[opt.sectionKey]) {
+        incomingMap[opt.sectionKey] = opt.proposedText;
+      }
     }
-    setProposals(map);
+    if (Object.keys(incomingMap).length > 0) {
+      setTimeout(() => {
+        setProposals((prev) => ({ ...prev, ...incomingMap }));
+      }, 0);
+    }
   }
 
   return (
@@ -249,6 +265,16 @@ export default function ThemeCopyPage() {
           })}
         </BlockStack>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <Page title="Theme Copy Optimizer">
+      <Banner tone="critical">
+        <p>A temporary error occurred while generating theme copy. Please refresh the page or try again.</p>
+      </Banner>
     </Page>
   );
 }

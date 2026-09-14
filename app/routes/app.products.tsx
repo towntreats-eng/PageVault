@@ -218,6 +218,156 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   }
 
+  if (actionType === "bulk_auto_optimize") {
+    const rawIds = formData.get("productGids") as string;
+    let targetGids: string[] = [];
+    if (rawIds) {
+      try {
+        targetGids = JSON.parse(rawIds);
+      } catch {}
+    }
+
+    const whereClause: any = { shopDomain };
+    if (targetGids.length > 0) {
+      whereClause.shopifyGid = { in: targetGids };
+    } else {
+      whereClause.isOptimized = false;
+    }
+
+    const itemsToOptimize = await prisma.productRecord.findMany({
+      where: whereClause,
+      take: 25,
+    });
+
+    if (itemsToOptimize.length === 0) {
+      return json({
+        actionType: "bulk_auto_optimize",
+        success: true,
+        message: "All products in your catalog are already optimized!",
+      });
+    }
+
+    const shop = await prisma.shop.findUnique({ where: { domain: shopDomain } });
+    let optimizedCount = 0;
+
+    for (const prod of itemsToOptimize) {
+      try {
+        const aiResult = await AIService.optimizeProduct(
+          shopDomain,
+          prod,
+          shop?.brandVoice || "professional"
+        );
+
+        // 1. Save Pre-Change Version Snapshots
+        await Promise.all([
+          recordContentVersion({
+            shopDomain,
+            resourceType: "product",
+            resourceGid: prod.shopifyGid,
+            field: "title",
+            beforeValue: prod.title,
+            afterValue: aiResult.title,
+            reason: "Bulk 1-Click AI SEO Optimization",
+          }),
+          recordContentVersion({
+            shopDomain,
+            resourceType: "product",
+            resourceGid: prod.shopifyGid,
+            field: "description",
+            beforeValue: prod.description || "",
+            afterValue: aiResult.description,
+            reason: "Bulk 1-Click AI SEO Optimization",
+          }),
+          recordContentVersion({
+            shopDomain,
+            resourceType: "product",
+            resourceGid: prod.shopifyGid,
+            field: "seo_title",
+            beforeValue: prod.seoTitle || "",
+            afterValue: aiResult.seoTitle,
+            reason: "Bulk 1-Click AI SEO Optimization",
+          }),
+          recordContentVersion({
+            shopDomain,
+            resourceType: "product",
+            resourceGid: prod.shopifyGid,
+            field: "seo_description",
+            beforeValue: prod.seoDescription || "",
+            afterValue: aiResult.seoDescription,
+            reason: "Bulk 1-Click AI SEO Optimization",
+          }),
+        ]);
+
+        // 2. Publish to Shopify GraphQL
+        const updateProductMutation = `#graphql
+          mutation updateProduct($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product { id title }
+              userErrors { field message }
+            }
+          }
+        `;
+        await executeGraphQL(admin, updateProductMutation, {
+          input: {
+            id: prod.shopifyGid,
+            title: aiResult.title,
+            descriptionHtml: aiResult.description,
+          },
+        });
+
+        // 3. Set Metafields
+        const setMetafieldsMutation = `#graphql
+          mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+              metafields { id value }
+              userErrors { field message }
+            }
+          }
+        `;
+        await executeGraphQL(admin, setMetafieldsMutation, {
+          metafields: [
+            {
+              ownerId: prod.shopifyGid,
+              namespace: "global",
+              key: "title_tag",
+              value: aiResult.seoTitle,
+              type: "single_line_text_field",
+            },
+            {
+              ownerId: prod.shopifyGid,
+              namespace: "global",
+              key: "description_tag",
+              value: aiResult.seoDescription,
+              type: "single_line_text_field",
+            },
+          ],
+        });
+
+        // 4. Update local product record
+        await prisma.productRecord.update({
+          where: { shopifyGid: prod.shopifyGid },
+          data: {
+            title: aiResult.title,
+            description: aiResult.description,
+            seoTitle: aiResult.seoTitle,
+            seoDescription: aiResult.seoDescription,
+            isOptimized: true,
+          },
+        });
+
+        optimizedCount++;
+      } catch (err) {
+        console.error(`[Bulk Optimize Error on ${prod.shopifyGid}]`, err);
+      }
+    }
+
+    return json({
+      actionType: "bulk_auto_optimize",
+      success: true,
+      message: `⚡ Successfully optimized and published ${optimizedCount} products to Shopify! Complete rollback snapshots saved.`,
+    });
+  }
+
   return json({ success: false, message: "Unknown action" });
 };
 
@@ -234,13 +384,29 @@ export default function ProductsPage() {
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(products, { resourceIDResolver });
 
-  // Open modal when preview data arrives from action
+  // Open modal safely when preview data arrives from action
   if (actionData?.actionType === "preview_single" && actionData.previewData && !activePreview) {
-    setActivePreview(actionData.previewData);
+    setTimeout(() => {
+      setActivePreview(actionData.previewData);
+    }, 0);
   }
 
   const handleGeneratePreview = (productGid: string) => {
     submit({ actionType: "preview_single", productGid }, { method: "post" });
+  };
+
+  const handleBulkOptimizeAll = () => {
+    submit({ actionType: "bulk_auto_optimize" }, { method: "post" });
+  };
+
+  const handleBulkOptimizeSelected = () => {
+    const selectedGids = selectedResources
+      .map((id) => products.find((p) => p.id === id)?.shopifyGid)
+      .filter(Boolean);
+    submit(
+      { actionType: "bulk_auto_optimize", productGids: JSON.stringify(selectedGids) },
+      { method: "post" }
+    );
   };
 
   const handleApplyDiff = (edited: {
@@ -266,6 +432,9 @@ export default function ProductsPage() {
 
   const isPreviewLoading =
     navigation.state === "submitting" && navigation.formData?.get("actionType") === "preview_single";
+
+  const isBulkOptimizing =
+    navigation.state === "submitting" && navigation.formData?.get("actionType") === "bulk_auto_optimize";
 
   const rowMarkup = products.map((p, index) => (
     <IndexTable.Row
@@ -325,9 +494,16 @@ export default function ProductsPage() {
       title="Product SEO Optimizer"
       subtitle="Analyze and rewrite product titles, conversion descriptions, and Google SERP snippets"
       primaryAction={{
-        content: "Scan / Refresh Catalog",
-        url: "/app",
+        content: "⚡ 1-Click Auto-Optimize All Products",
+        onAction: handleBulkOptimizeAll,
+        loading: isBulkOptimizing,
       }}
+      secondaryActions={[
+        {
+          content: "Scan / Refresh Catalog",
+          url: "/app",
+        },
+      ]}
     >
       <BlockStack gap="400">
         {actionData?.message && (
@@ -364,6 +540,13 @@ export default function ProductsPage() {
             itemCount={products.length}
             selectedItemsCount={allResourcesSelected ? "All" : selectedResources.length}
             onSelectionChange={handleSelectionChange}
+            promotedBulkActions={[
+              {
+                content: `⚡ Auto-Optimize Selected (${selectedResources.length})`,
+                onAction: handleBulkOptimizeSelected,
+                loading: isBulkOptimizing,
+              },
+            ]}
             headings={[
               { title: "Product Title" },
               { title: "Product Type" },
