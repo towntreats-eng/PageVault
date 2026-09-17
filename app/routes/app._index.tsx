@@ -153,18 +153,21 @@ export default function Dashboard() {
                   <Badge tone="success">PRO AUTOMATION</Badge>
                 </InlineStack>
                 <Text as="p" tone="subdued">
-                  Automatically rewrite and optimize all product titles, Google SERP meta descriptions, structured HTML, and image ALTs across your entire catalog. Backed by 1-click instant rollback.
+                  Autonomous AI SEO Agent, deep catalog scanner, Google Rich Snippets, AEO/GEO citations, and 1-click batch optimization with instant rollback.
                 </Text>
               </BlockStack>
-              <InlineStack gap="300">
-                <Button variant="primary" size="large" url="/app/products">
-                  ⚡ Auto-Optimize Store Products
+              <InlineStack gap="200">
+                <Button variant="primary" size="large" url="/app/agent">
+                  🤖 Launch AI SEO Agent
+                </Button>
+                <Button size="large" url="/app/products">
+                  ⚡ Products
+                </Button>
+                <Button size="large" url="/app/schema">
+                  🏷️ Schema & AEO
                 </Button>
                 <Button size="large" url="/app/images">
-                  🖼️ Image SEO & Compression
-                </Button>
-                <Button size="large" url="/app/gsc">
-                  Connect Google Search Console
+                  🖼️ Image SEO
                 </Button>
               </InlineStack>
             </InlineStack>

@@ -56,6 +56,7 @@ model Shop {
   contentVersions  ContentVersion[]
   jobs             OptimizationJob[]
   aiUsage          AiUsageRecord[]
+  agentRuns        AgentRun[]
 }
 
 model ProductRecord {
@@ -226,3 +227,21 @@ model AiUsageRecord {
 
   @@index([shopDomain, createdAt])
 }
+
+model AgentRun {
+  id             String    @id @default(uuid())
+  shopDomain     String
+  shop           Shop      @relation(fields: [shopDomain], references: [domain], onDelete: Cascade)
+  goal           String
+  goalCategory   String    @default("defects") // defects | transactional_keywords | geo_ai | conversion_copy | custom
+  status         String    @default("proposals_ready") // pending | analyzing | proposals_ready | applied | cancelled
+  strategy       String?   // Multi-step reasoning output
+  proposalsJson  String?   // JSON array of proposed changes
+  appliedCount   Int       @default(0)
+  totalProposals Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([shopDomain, status])
+}
+

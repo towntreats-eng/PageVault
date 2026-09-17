@@ -22,14 +22,19 @@ export default function App() {
     <AppProvider isEmbeddedApp apiKey={apiKey}>
       <NavMenu>
         <Link to="/app" rel="home">Dashboard</Link>
+        <Link to="/app/agent">AI SEO Agent</Link>
         <Link to="/app/products">Products</Link>
         <Link to="/app/images">Image SEO</Link>
+        <Link to="/app/schema">Schema & AEO</Link>
+        <Link to="/app/redirects">301 Redirects</Link>
+        <Link to="/app/sitemap">Sitemap & Robots</Link>
         <Link to="/app/keywords">Keywords</Link>
         <Link to="/app/competitors">Competitors</Link>
         <Link to="/app/theme">Theme Copy</Link>
         <Link to="/app/gsc">Google Search Console</Link>
         <Link to="/app/blog">Blog SEO</Link>
         <Link to="/app/history">History & Rollback</Link>
+        <Link to="/app/plans">Plans & Quotas</Link>
         <Link to="/app/settings">Settings</Link>
       </NavMenu>
       <Outlet />
