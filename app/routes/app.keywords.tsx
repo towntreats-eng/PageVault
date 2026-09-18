@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -25,10 +25,10 @@ import {
 } from "../services/keywords.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const savedKeywords = await prisma.keywordTarget.findMany({
       where: { shopDomain },
       orderBy: { createdAt: "desc" },
@@ -40,7 +40,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       savedKeywords,
       cannibalizationIssues,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Keywords Loader Error]", error);
     return json({
       savedKeywords: [],
@@ -302,6 +303,31 @@ export default function KeywordsPage() {
           </Layout.Section>
         </Layout>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Keywords Route ErrorBoundary]", error);
+
+  return (
+    <Page title="AI Keyword Research & Rank Intelligence">
+      <Banner
+        title="Keyword Research Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading keyword data.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

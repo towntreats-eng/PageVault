@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Card,
@@ -22,14 +22,14 @@ import { recordContentVersion } from "../services/versions.server";
 import { DiffPreviewModal, type DiffPreviewData } from "../components/DiffPreviewModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
   const url = new URL(request.url);
   const query = url.searchParams.get("q") || "";
   const filter = url.searchParams.get("filter") || "all";
 
   try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
-
     const shop = await prisma.shop.findUnique({
       where: { domain: shopDomain },
       select: { brandVoice: true },
@@ -61,7 +61,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       query,
       filter,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Products Loader Error]", error);
     return json({
       products: [],
@@ -569,6 +570,31 @@ export default function ProductsPage() {
           loading={navigation.state === "submitting" && navigation.formData?.get("actionType") === "publish_changes"}
         />
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Products Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Products SEO Optimization Studio">
+      <Banner
+        title="Products Studio Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading products.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

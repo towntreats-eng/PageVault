@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -21,16 +21,17 @@ import { authenticate } from "../shopify.server";
 
 // Server-only imports — only used inside loader/action, automatically tree-shaken by Remix
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
   const { analyzeStoreImages } = await import("../services/images.server");
 
   try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
-
     const report = await analyzeStoreImages(shopDomain);
 
     return json({ report, error: null });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Images Loader Error]", error);
     return json({
       report: {
@@ -413,6 +414,31 @@ export default function ImagesPage() {
           </BlockStack>
         </Card>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Images Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Image SEO & WebP Optimization Studio">
+      <Banner
+        title="Image Optimization Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading image data.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

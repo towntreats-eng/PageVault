@@ -25,10 +25,10 @@ import { AgentService } from "../services/agent.server";
 import { DiffPreviewModal, type DiffPreviewData } from "../components/DiffPreviewModal";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     // Load latest agent run
     const latestRun = await prisma.agentRun.findFirst({
       where: { shopDomain },
@@ -68,6 +68,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: null,
     });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Agent Loader Error]", error);
     return json({
       goals: AGENT_GOALS,

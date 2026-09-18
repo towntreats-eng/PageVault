@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -18,10 +18,10 @@ import { authenticate } from "../shopify.server";
 import { BillingService } from "../services/billing.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const billingInfo = await BillingService.getShopUsage(shopDomain);
 
     return json({
@@ -30,6 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: null,
     });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Plans Loader Error]", error);
     return json({
       shopDomain: "",
@@ -236,6 +237,31 @@ export default function PlansRoute() {
           </Layout.Section>
         </Layout>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Plans Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Plans & Usage Tier Management">
+      <Banner
+        title="Billing & Plans Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading billing information.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

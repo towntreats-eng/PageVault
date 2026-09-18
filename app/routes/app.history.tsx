@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Card,
@@ -15,12 +15,15 @@ import { authenticate } from "../shopify.server";
 import { getVersionHistory, rollbackContentVersion } from "../services/versions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
   try {
-    const { session } = await authenticate.admin(request);
-    const history = await getVersionHistory(session.shop, 100);
+    const history = await getVersionHistory(shopDomain, 100);
 
     return json({ history });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[History Loader Error]", error);
     return json({ history: [] });
   }
@@ -144,6 +147,31 @@ export default function HistoryPage() {
           )}
         </Card>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[History Route ErrorBoundary]", error);
+
+  return (
+    <Page title="SEO Optimization History & Rollbacks">
+      <Banner
+        title="History Log Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading your optimization history.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

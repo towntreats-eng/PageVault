@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -22,10 +22,10 @@ import { AIService, type BlogOptimizationResult } from "../services/ai.server";
 import { recordContentVersion } from "../services/versions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const articles = await prisma.articleRecord.findMany({
       where: { shopDomain },
       orderBy: { updatedAt: "desc" },
@@ -40,7 +40,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       articles,
       brandVoice: shop?.brandVoice || "professional",
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Blog Loader Error]", error);
     return json({
       articles: [],
@@ -292,6 +293,31 @@ export default function BlogSeoPage() {
           </Layout>
         )}
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Blog Route ErrorBoundary]", error);
+
+  return (
+    <Page title="AI Blog SEO Studio">
+      <Banner
+        title="Blog Studio Encountered an Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading your blog articles.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

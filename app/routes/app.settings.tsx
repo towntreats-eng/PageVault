@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,10 +20,10 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const shop = await prisma.shop.upsert({
       where: { domain: shopDomain },
       create: { domain: shopDomain },
@@ -50,7 +50,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         estimatedCostUsd: Math.round(((totalInputTokens * 0.000075 + totalOutputTokens * 0.0003) / 1000) * 10000) / 10000,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Settings Loader Error]", error);
     return json({
       shop: {
@@ -263,6 +264,31 @@ export default function SettingsPage() {
           </Layout.Section>
         </Layout>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Settings Route ErrorBoundary]", error);
+
+  return (
+    <Page title="SEO & AI Engine Settings">
+      <Banner
+        title="Settings Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading app settings.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

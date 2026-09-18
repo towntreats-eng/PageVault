@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,8 +20,9 @@ import { authenticate } from "../shopify.server";
 import { RedirectsService, type ShopifyRedirectNode } from "../services/redirects.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
   try {
-    const { admin } = await authenticate.admin(request);
     const redirects = await RedirectsService.getRedirects(admin);
 
     return json({
@@ -29,6 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: null,
     });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Redirects Loader Error]", error);
     return json({
       redirects: [],
@@ -237,6 +239,31 @@ export default function RedirectsRoute() {
           </BlockStack>
         </Card>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Redirects Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Shopify 301 Redirects Manager">
+      <Banner
+        title="Redirects Manager Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading store redirects.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

@@ -45,10 +45,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     },
   ];
 
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const shop = await prisma.shop.findUnique({
       where: { domain: shopDomain },
       select: { brandVoice: true },
@@ -58,7 +58,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       brandVoice: shop?.brandVoice || "premium",
       sections: defaultSections,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Theme Loader Error]", error);
     return json({
       brandVoice: "premium",
@@ -68,9 +69,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
   try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
     const formData = await request.formData();
     const actionType = formData.get("actionType");
 

@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useRouteError, useSubmit } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,10 +20,10 @@ import { calculateStoreAudit } from "../services/audit.server";
 import { scanStoreContent } from "../services/scanner.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     // Ensure shop record exists
     await prisma.shop.upsert({
       where: { domain: shopDomain },
@@ -47,9 +47,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       loadError: null,
     });
   } catch (error: any) {
+    if (error instanceof Response) {
+      throw error;
+    }
     console.error("[Dashboard Loader Error]", error);
     return json({
-      shopDomain: "",
+      shopDomain,
       productCount: 0,
       audit: {
         overallScore: 100,
@@ -96,9 +99,21 @@ export default function Dashboard() {
     submit({ actionType: "scan" }, { method: "post" });
   };
 
-  const getScoreBadgeTone = (score: number) => {
+  const getScoreBadgeTone = (score: number): "success" | "attention" | "critical" => {
     if (score >= 80) return "success";
     if (score >= 60) return "attention";
+    return "critical";
+  };
+
+  const getScoreTextTone = (score: number): "success" | "caution" | "critical" => {
+    if (score >= 80) return "success";
+    if (score >= 60) return "caution";
+    return "critical";
+  };
+
+  const getProgressBarTone = (score: number): "success" | "primary" | "critical" => {
+    if (score >= 80) return "success";
+    if (score >= 60) return "primary";
     return "critical";
   };
 
@@ -273,11 +288,11 @@ export default function Dashboard() {
                         <Text as="span" variant="bodySm">
                           {cat.category}
                         </Text>
-                        <Text as="span" variant="bodySm" tone={getScoreBadgeTone(cat.score)}>
+                        <Text as="span" variant="bodySm" tone={getScoreTextTone(cat.score)}>
                           {cat.score}%
                         </Text>
                       </InlineStack>
-                      <ProgressBar progress={cat.score} tone={getScoreBadgeTone(cat.score)} size="small" />
+                      <ProgressBar progress={cat.score} tone={getProgressBarTone(cat.score)} size="small" />
                     </BlockStack>
                   ))}
                 </BlockStack>
@@ -367,7 +382,7 @@ export default function Dashboard() {
                       {v.resourceType.toUpperCase()} ({v.field})
                     </Text>
                     <Text as="span" variant="bodyXs" tone="subdued">
-                      {v.reason || "Optimized via AI"} • {new Date(v.appliedAt).toLocaleString()}
+                      {v.reason || "Optimized via AI"} • {typeof v.appliedAt === "string" ? v.appliedAt.slice(0, 10) : new Date(v.appliedAt).toISOString().slice(0, 10)}
                     </Text>
                   </BlockStack>
                   <Badge tone={v.revertedAt ? "subdued" : "success"}>
@@ -378,6 +393,37 @@ export default function Dashboard() {
             </BlockStack>
           </Card>
         )}
+      </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Dashboard Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Store SEO Health & AI Management">
+      <BlockStack gap="400">
+        <Banner
+          title="Store SEO Dashboard Error"
+          tone="critical"
+          action={{
+            content: "Reload Dashboard",
+            onAction: () => window.location.reload(),
+          }}
+        >
+          <p>
+            An unexpected error occurred while loading your store SEO audit. Please refresh the page to retry.
+          </p>
+          {(error as any)?.message && (
+            <Box paddingBlockStart="200">
+              <Text as="p" variant="bodySm" tone="critical">
+                {(error as any).message}
+              </Text>
+            </Box>
+          )}
+        </Banner>
       </BlockStack>
     </Page>
   );

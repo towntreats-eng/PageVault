@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, useNavigation, useSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useNavigation, useSubmit, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -20,11 +20,14 @@ import { authenticate } from "../shopify.server";
 import { getGscData, saveGscVerificationTag } from "../services/gsc.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
   try {
-    const { session } = await authenticate.admin(request);
-    const gsc = await getGscData(session.shop);
+    const gsc = await getGscData(shopDomain);
     return json({ gsc });
-  } catch (err) {
+  } catch (err: any) {
+    if (err instanceof Response) throw err;
     console.error("[GSC Loader Error]", err);
     return json({
       gsc: {
@@ -285,6 +288,31 @@ export default function GoogleSearchConsolePage() {
           </Card>
         )}
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[GSC Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Google Search Console Integration">
+      <Banner
+        title="Google Search Console Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading Google Search Console data.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

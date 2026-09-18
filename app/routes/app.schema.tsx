@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -22,10 +22,10 @@ import prisma from "../db.server";
 import { SchemaService } from "../services/schema";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const shop = await prisma.shop.findUnique({
       where: { domain: shopDomain },
     });
@@ -43,6 +43,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       liquidSnippet: SchemaService.generateLiquidSnippet(shopDomain),
     });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Schema Loader Error]", error);
     return json({
       shopDomain: "",
@@ -325,6 +326,31 @@ export default function SchemaStudio() {
           </Layout>
         )}
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Schema Route ErrorBoundary]", error);
+
+  return (
+    <Page title="JSON-LD Rich Snippet & Schema Studio">
+      <Banner
+        title="Schema Studio Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading schema markup.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }

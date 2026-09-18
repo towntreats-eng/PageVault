@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useRouteError } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -19,10 +19,10 @@ import { authenticate } from "../shopify.server";
 import { SitemapService } from "../services/sitemap";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  try {
-    const { session } = await authenticate.admin(request);
-    const shopDomain = session.shop;
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
 
+  try {
     const sitemaps = SitemapService.getSitemapEndpoints(shopDomain);
     const robotsTxtSnippet = SitemapService.generateRobotsTxtLiquid(shopDomain);
 
@@ -33,6 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       error: null,
     });
   } catch (error: any) {
+    if (error instanceof Response) throw error;
     console.error("[Sitemap Loader Error]", error);
     return json({
       shopDomain: "",
@@ -222,6 +223,31 @@ export default function SitemapRoute() {
           </Layout.Section>
         </Layout>
       </BlockStack>
+    </Page>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("[Sitemap Route ErrorBoundary]", error);
+
+  return (
+    <Page title="Shopify Native Sitemap & Robots.txt Studio">
+      <Banner
+        title="Sitemap Studio Error"
+        tone="critical"
+        action={{
+          content: "Reload",
+          onAction: () => window.location.reload(),
+        }}
+      >
+        <p>An unexpected error occurred while loading sitemap details.</p>
+        {(error as any)?.message && (
+          <p style={{ marginTop: "8px", fontFamily: "monospace", color: "#c53030" }}>
+            {(error as any).message}
+          </p>
+        )}
+      </Banner>
     </Page>
   );
 }
